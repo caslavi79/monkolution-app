@@ -2573,29 +2573,258 @@ function AICoachCard() {
     });
   }
 
-  // Monk avatar component
+  // Master Li — CSS character rig with layered animated body parts
   var MonkAvatar = function(props) {
     var size = props.size || 48;
-    var meditating = props.meditating;
+    var thinking = props.meditating;
+    var _b = useState(false); var blinking = _b[0]; var setBlink = _b[1];
+    var _s = useState(false); var smiling = _s[0]; var setSmile = _s[1];
+    var _n = useState(0); var nod = _n[0]; var setNod = _n[1];
+
+    useEffect(function() {
+      // Blink every 3-6 seconds
+      var blinkLoop = function() {
+        setBlink(true);
+        setTimeout(function() { setBlink(false); }, 150);
+        setTimeout(blinkLoop, 3000 + Math.random() * 3000);
+      };
+      var t1 = setTimeout(blinkLoop, 2000);
+      // Occasional smile
+      var smileLoop = function() {
+        setSmile(true);
+        setTimeout(function() { setSmile(false); }, 2000);
+        setTimeout(smileLoop, 8000 + Math.random() * 7000);
+      };
+      var t2 = setTimeout(smileLoop, 5000);
+      // Occasional subtle nod
+      var nodLoop = function() {
+        setNod(1);
+        setTimeout(function() { setNod(2); }, 300);
+        setTimeout(function() { setNod(0); }, 600);
+        setTimeout(nodLoop, 10000 + Math.random() * 5000);
+      };
+      var t3 = setTimeout(nodLoop, 7000);
+      return function() { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+    }, []);
+
+    var s = size / 48; // scale factor
+    var skin = "#C8A882";
+    var skinShadow = "#B89870";
+    var robe = "#2a2a2a";
+    var robeDark = "#1e1e1e";
+    var cap = "#333";
+    var beard = "#888";
+    var headRotate = nod === 1 ? "rotate(-2deg)" : nod === 2 ? "rotate(1deg)" : "rotate(0deg)";
+
     return React.createElement("div", { style: {
-      position: "relative", width: size, height: size, flexShrink: 0
+      position: "relative", width: size, height: size * 1.3, flexShrink: 0,
+      animation: thinking ? "masterLiFloat 4s ease-in-out infinite" : "none",
+      filter: "drop-shadow(0 2px 12px rgba(74,222,128,0.15))"
     } },
-      // Glow ring
+      // Aura glow behind
       React.createElement("div", { style: {
-        position: "absolute", inset: -4, borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(74,222,128,0.15) 0%, transparent 70%)",
-        animation: "masterLiGlow 3s ease-in-out infinite"
+        position: "absolute", left: "50%", top: "40%", width: size * 1.5, height: size * 1.5,
+        transform: "translate(-50%,-50%)", borderRadius: "50%",
+        background: "radial-gradient(circle, rgba(74,222,128,0.12) 0%, transparent 70%)",
+        animation: "masterLiGlow 4s ease-in-out infinite", pointerEvents: "none"
       } }),
-      // Monk circle
+      // Body container
       React.createElement("div", { style: {
-        width: size, height: size, borderRadius: "50%",
-        background: "linear-gradient(135deg, #1a2e1a 0%, #0d1f0d 100%)",
-        border: "2px solid rgba(74,222,128,0.3)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: size * 0.55, lineHeight: 1,
-        animation: meditating ? "masterLiFloat 4s ease-in-out infinite" : "none",
-        boxShadow: "0 0 20px rgba(74,222,128,0.1), inset 0 0 15px rgba(74,222,128,0.05)"
-      } }, "\uD83E\uDDD8")
+        position: "relative", width: "100%", height: "100%"
+      } },
+        // === ROBES / BODY ===
+        React.createElement("div", { style: {
+          position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)",
+          width: size * 0.85, height: size * 0.7,
+          background: "linear-gradient(180deg, " + robe + " 0%, " + robeDark + " 100%)",
+          borderRadius: (8*s) + "px " + (8*s) + "px " + (4*s) + "px " + (4*s) + "px",
+          animation: "masterLiBreathe 4s ease-in-out infinite"
+        } },
+          // Robe collar V
+          React.createElement("div", { style: {
+            position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
+            width: 0, height: 0,
+            borderLeft: (8*s) + "px solid transparent",
+            borderRight: (8*s) + "px solid transparent",
+            borderTop: (10*s) + "px solid " + skin
+          } }),
+          // Robe fold line
+          React.createElement("div", { style: {
+            position: "absolute", top: "20%", left: "35%", width: "1px", height: "70%",
+            background: "rgba(255,255,255,0.04)"
+          } }),
+          React.createElement("div", { style: {
+            position: "absolute", top: "15%", right: "38%", width: "1px", height: "75%",
+            background: "rgba(255,255,255,0.04)"
+          } }),
+          // Hands clasped
+          React.createElement("div", { style: {
+            position: "absolute", bottom: "25%", left: "50%", transform: "translateX(-50%)",
+            width: size * 0.3, height: size * 0.12,
+            background: skin, borderRadius: size * 0.06,
+            boxShadow: "inset 0 -1px 2px rgba(0,0,0,0.15)"
+          } })
+        ),
+        // === SLEEVES ===
+        React.createElement("div", { style: {
+          position: "absolute", bottom: size * 0.25, left: size * 0.02,
+          width: size * 0.25, height: size * 0.35,
+          background: robe, borderRadius: (6*s) + "px",
+          transform: "rotate(15deg)", transformOrigin: "top right"
+        } }),
+        React.createElement("div", { style: {
+          position: "absolute", bottom: size * 0.25, right: size * 0.02,
+          width: size * 0.25, height: size * 0.35,
+          background: robe, borderRadius: (6*s) + "px",
+          transform: "rotate(-15deg)", transformOrigin: "top left"
+        } }),
+        // === HEAD GROUP (animated) ===
+        React.createElement("div", { style: {
+          position: "absolute", top: 0, left: "50%",
+          transform: "translateX(-50%) " + headRotate,
+          transition: "transform 0.3s ease",
+          width: size * 0.6, height: size * 0.55
+        } },
+          // Head shape
+          React.createElement("div", { style: {
+            position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)",
+            width: size * 0.5, height: size * 0.45,
+            background: "linear-gradient(180deg, " + skin + " 60%, " + skinShadow + " 100%)",
+            borderRadius: "45% 45% 40% 40%"
+          } },
+            // Wrinkle lines
+            React.createElement("div", { style: {
+              position: "absolute", top: "22%", left: "20%", width: "25%", height: "1px",
+              background: "rgba(0,0,0,0.08)"
+            } }),
+            React.createElement("div", { style: {
+              position: "absolute", top: "26%", left: "22%", width: "20%", height: "1px",
+              background: "rgba(0,0,0,0.06)"
+            } }),
+            React.createElement("div", { style: {
+              position: "absolute", top: "22%", right: "20%", width: "25%", height: "1px",
+              background: "rgba(0,0,0,0.08)"
+            } }),
+            // === EYES ===
+            // Left eye
+            React.createElement("div", { style: {
+              position: "absolute", top: "38%", left: "22%",
+              width: size * 0.08, height: blinking ? 1 : size * 0.035,
+              background: "#3a2a1a", borderRadius: blinking ? "0" : "50%",
+              transition: "height 0.08s ease"
+            } }),
+            // Right eye
+            React.createElement("div", { style: {
+              position: "absolute", top: "38%", right: "22%",
+              width: size * 0.08, height: blinking ? 1 : size * 0.035,
+              background: "#3a2a1a", borderRadius: blinking ? "0" : "50%",
+              transition: "height 0.08s ease"
+            } }),
+            // Eye glints
+            !blinking && React.createElement("div", { style: {
+              position: "absolute", top: "36%", left: "25%",
+              width: Math.max(1, size * 0.015), height: Math.max(1, size * 0.015),
+              background: "#fff", borderRadius: "50%", opacity: 0.6
+            } }),
+            !blinking && React.createElement("div", { style: {
+              position: "absolute", top: "36%", right: "25%",
+              width: Math.max(1, size * 0.015), height: Math.max(1, size * 0.015),
+              background: "#fff", borderRadius: "50%", opacity: 0.6
+            } }),
+            // Eyebrows
+            React.createElement("div", { style: {
+              position: "absolute", top: "30%", left: "18%",
+              width: size * 0.12, height: 1, background: "#6B5A42",
+              transform: "rotate(-5deg)", borderRadius: 1
+            } }),
+            React.createElement("div", { style: {
+              position: "absolute", top: "30%", right: "18%",
+              width: size * 0.12, height: 1, background: "#6B5A42",
+              transform: "rotate(5deg)", borderRadius: 1
+            } }),
+            // Nose
+            React.createElement("div", { style: {
+              position: "absolute", top: "45%", left: "50%", transform: "translateX(-50%)",
+              width: size * 0.05, height: size * 0.08,
+              background: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.06) 100%)",
+              borderRadius: "30% 30% 50% 50%"
+            } }),
+            // Mouth
+            React.createElement("div", { style: {
+              position: "absolute", top: "65%", left: "50%", transform: "translateX(-50%)",
+              width: size * 0.12, height: smiling ? size * 0.03 : 1,
+              borderBottom: "1px solid #8B7055",
+              borderRadius: smiling ? "0 0 50% 50%" : "0",
+              transition: "all 0.5s ease"
+            } }),
+            // === MUSTACHE — long, thin, drooping ===
+            React.createElement("div", { style: {
+              position: "absolute", top: "63%", left: "25%",
+              width: 1, height: size * 0.2,
+              background: "linear-gradient(180deg, " + beard + " 0%, transparent 100%)",
+              transform: "rotate(10deg)",
+              transformOrigin: "top center",
+              animation: "masterLiBeardSway 5s ease-in-out infinite"
+            } }),
+            React.createElement("div", { style: {
+              position: "absolute", top: "63%", right: "25%",
+              width: 1, height: size * 0.2,
+              background: "linear-gradient(180deg, " + beard + " 0%, transparent 100%)",
+              transform: "rotate(-10deg)",
+              transformOrigin: "top center",
+              animation: "masterLiBeardSway 5s ease-in-out infinite reverse"
+            } }),
+            // Chin beard — wispy
+            React.createElement("div", { style: {
+              position: "absolute", top: "72%", left: "50%", transform: "translateX(-50%)",
+              width: 1, height: size * 0.25,
+              background: "linear-gradient(180deg, " + beard + " 0%, transparent 100%)",
+              animation: "masterLiBeardSway 6s ease-in-out infinite"
+            } }),
+            React.createElement("div", { style: {
+              position: "absolute", top: "72%", left: "45%",
+              width: 1, height: size * 0.18,
+              background: "linear-gradient(180deg, rgba(136,136,136,0.5) 0%, transparent 100%)",
+              transform: "rotate(3deg)",
+              animation: "masterLiBeardSway 7s ease-in-out infinite"
+            } }),
+            React.createElement("div", { style: {
+              position: "absolute", top: "72%", right: "45%",
+              width: 1, height: size * 0.18,
+              background: "linear-gradient(180deg, rgba(136,136,136,0.5) 0%, transparent 100%)",
+              transform: "rotate(-3deg)",
+              animation: "masterLiBeardSway 7s ease-in-out infinite reverse"
+            } }),
+            // Ears
+            React.createElement("div", { style: {
+              position: "absolute", top: "35%", left: -size * 0.04,
+              width: size * 0.06, height: size * 0.1,
+              background: skinShadow, borderRadius: "40% 0 0 50%"
+            } }),
+            React.createElement("div", { style: {
+              position: "absolute", top: "35%", right: -size * 0.04,
+              width: size * 0.06, height: size * 0.1,
+              background: skinShadow, borderRadius: "0 40% 50% 0"
+            } })
+          ),
+          // === CAP ===
+          React.createElement("div", { style: {
+            position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
+            width: size * 0.42, height: size * 0.18,
+            background: "linear-gradient(180deg, #3a3a3a 0%, " + cap + " 100%)",
+            borderRadius: (4*s) + "px " + (4*s) + "px " + (2*s) + "px " + (2*s) + "px",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.3)"
+          } },
+            // Cap button/knot
+            React.createElement("div", { style: {
+              position: "absolute", top: -size * 0.025, left: "50%", transform: "translateX(-50%)",
+              width: size * 0.05, height: size * 0.05,
+              background: "#444", borderRadius: "50%",
+              boxShadow: "0 0 2px rgba(0,0,0,0.5)"
+            } })
+          )
+        )
+      )
     );
   };
 
@@ -2612,7 +2841,8 @@ function AICoachCard() {
     React.createElement("style", null,
       "@keyframes masterLiFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }" +
       "@keyframes masterLiGlow { 0%,100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.1); } }" +
-      "@keyframes masterLiBreathe { 0%,100% { opacity: 0.3; } 50% { opacity: 0.6; } }" +
+      "@keyframes masterLiBreathe { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.012); } }" +
+      "@keyframes masterLiBeardSway { 0%,100% { transform: rotate(10deg); } 50% { transform: rotate(14deg); } }" +
       "@keyframes masterLiThink { 0% { opacity: 0.2; } 50% { opacity: 0.5; } 100% { opacity: 0.2; } }"
     ),
     // Header with avatar
@@ -2620,7 +2850,7 @@ function AICoachCard() {
       display: "flex", alignItems: "center", gap: 14, padding: "16px 18px",
       borderBottom: (mode === "plan" || mode === "loading") ? "1px solid rgba(74,222,128,0.08)" : "none"
     } },
-      React.createElement(MonkAvatar, { size: mode === "loading" ? 52 : 44, meditating: mode === "loading" || mode === "nudge" || mode === "idle" }),
+      React.createElement(MonkAvatar, { size: mode === "loading" ? 64 : 56, meditating: mode === "loading" || mode === "nudge" || mode === "idle" }),
       React.createElement("div", { style: { flex: 1 } },
         React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 8 } },
           React.createElement("span", { style: { fontSize: 16, fontWeight: 800, color: "#f5f5f7", fontFamily: "'Syne','DM Sans',sans-serif", letterSpacing: "-0.3px" } }, "Master Li"),
