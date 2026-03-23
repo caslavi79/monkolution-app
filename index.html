@@ -26,7 +26,7 @@
 
   <!-- Supabase JS v2 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+  <!-- Lottie removed — Master Li uses CSS-animated SVG now (swap to PNG when custom art is ready) -->
 
   <script>
 /*
@@ -1647,9 +1647,9 @@ function NotifSettingsSection() {
       p.tasks_enabled && React.createElement(TimeSelect, { val: p.tasks_hour, onChange: function(v) { saveNotifProfile({ tasks_hour: v }); } }),
       React.createElement("div", { style: rowLast },
         React.createElement("div", null,
-          React.createElement("div", { style: { fontSize: 15, color: "#f5f5f7", fontWeight: 500 } }, "🧠 AI Daily Digest"),
+          React.createElement("div", { style: { fontSize: 15, color: "#f5f5f7", fontWeight: 500 } }, "🧠 AI Daily Coaching"),
           React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.35)", marginTop: 2 } }, p.digest_enabled ? ("Sends daily at " + hourLabel(p.digest_hour)) : "Off"),
-          React.createElement("div", { style: { fontSize: 11, color: "rgba(74,222,128,0.6)", marginTop: 2 } }, "Personalized briefing from Master Li (Claude AI)")
+          React.createElement("div", { style: { fontSize: 11, color: "rgba(74,222,128,0.6)", marginTop: 2 } }, "In-depth daily coaching from Master Li — streaks, patterns, evolution progress")
         ),
         React.createElement(Toggle, { on: p.digest_enabled, onToggle: function() { saveNotifProfile({ digest_enabled: !p.digest_enabled }); } })
       ),
@@ -2574,47 +2574,105 @@ function AICoachCard() {
     });
   }
 
-  // Master Li — Lottie animated character
+  // Master Li — CSS-animated character (swap PNG path for custom art)
+  var MASTER_LI_PNG = null; // Set to 'master-li.png' when custom art is ready
   var MonkAvatar = function(props) {
     var size = props.size || 56;
     var thinking = props.meditating;
-    var containerRef = useRef(null);
-    var animRef = useRef(null);
 
-    useEffect(function() {
-      if (!containerRef.current || animRef.current) return;
-      if (typeof lottie === 'undefined') return;
-      animRef.current = lottie.loadAnimation({
-        container: containerRef.current,
-        renderer: 'svg',
-        loop: true,
-        autoplay: true,
-        path: 'master-li.json'
-      });
-      return function() { if (animRef.current) { animRef.current.destroy(); animRef.current = null; } };
-    }, []);
+    // SVG monk silhouette — clean, stylized meditation figure
+    var monkSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">' +
+      '<defs>' +
+        '<radialGradient id="bodyGrad" cx="50%" cy="40%" r="50%">' +
+          '<stop offset="0%" stop-color="#6B5B4F"/>' +
+          '<stop offset="100%" stop-color="#3D3028"/>' +
+        '</radialGradient>' +
+        '<radialGradient id="skinGrad" cx="50%" cy="35%" r="50%">' +
+          '<stop offset="0%" stop-color="#E8C9A0"/>' +
+          '<stop offset="100%" stop-color="#C9A87C"/>' +
+        '</radialGradient>' +
+      '</defs>' +
+      // Body — robes (seated meditation)
+      '<ellipse cx="60" cy="92" rx="34" ry="22" fill="url(#bodyGrad)"/>' +
+      '<path d="M36 78 Q38 60 60 55 Q82 60 84 78 Q84 92 60 96 Q36 92 36 78Z" fill="url(#bodyGrad)"/>' +
+      // Robe collar/folds
+      '<path d="M48 65 Q60 72 72 65" stroke="#2A2018" stroke-width="1.2" fill="none" opacity="0.4"/>' +
+      '<path d="M44 72 Q60 80 76 72" stroke="#2A2018" stroke-width="0.8" fill="none" opacity="0.3"/>' +
+      // Hands (folded in lap)
+      '<ellipse cx="54" cy="84" rx="7" ry="4.5" fill="url(#skinGrad)" transform="rotate(-8 54 84)"/>' +
+      '<ellipse cx="66" cy="84" rx="7" ry="4.5" fill="url(#skinGrad)" transform="rotate(8 66 84)"/>' +
+      // Head
+      '<circle cx="60" cy="38" r="17" fill="url(#skinGrad)"/>' +
+      // Eyes (serene, slightly closed)
+      '<ellipse cx="53" cy="38" rx="2.5" ry="1" fill="#2A2018" opacity="0.7"/>' +
+      '<ellipse cx="67" cy="38" rx="2.5" ry="1" fill="#2A2018" opacity="0.7"/>' +
+      // Eyebrows
+      '<path d="M49 35 Q53 33 57 35" stroke="#2A2018" stroke-width="0.8" fill="none" opacity="0.4"/>' +
+      '<path d="M63 35 Q67 33 71 35" stroke="#2A2018" stroke-width="0.8" fill="none" opacity="0.4"/>' +
+      // Subtle smile
+      '<path d="M55 43 Q60 46 65 43" stroke="#8B6F4F" stroke-width="0.8" fill="none" opacity="0.5"/>' +
+      // Beard (long, flowing)
+      '<path d="M52 46 Q50 58 48 70 Q50 72 54 68 Q56 60 56 50Z" fill="#D4D4D4" opacity="0.85"/>' +
+      '<path d="M68 46 Q70 58 72 70 Q70 72 66 68 Q64 60 64 50Z" fill="#D4D4D4" opacity="0.85"/>' +
+      '<path d="M56 48 Q58 62 56 76 Q60 78 64 76 Q62 62 64 48Z" fill="#E8E8E8" opacity="0.8"/>' +
+      // Mustache
+      '<path d="M54 44 Q50 46 46 44" stroke="#CCCCCC" stroke-width="1.5" fill="none" opacity="0.7"/>' +
+      '<path d="M66 44 Q70 46 74 44" stroke="#CCCCCC" stroke-width="1.5" fill="none" opacity="0.7"/>' +
+      // Bald head highlight
+      '<ellipse cx="58" cy="24" rx="10" ry="5" fill="rgba(255,255,255,0.08)"/>' +
+      // Wrinkle lines (wisdom)
+      '<path d="M48 32 Q50 31 52 32" stroke="#B8956A" stroke-width="0.4" fill="none" opacity="0.4"/>' +
+      '<path d="M68 32 Q70 31 72 32" stroke="#B8956A" stroke-width="0.4" fill="none" opacity="0.4"/>' +
+    '</svg>';
 
-    // Speed up animation when thinking
-    useEffect(function() {
-      if (animRef.current) animRef.current.setSpeed(thinking ? 1.5 : 1);
-    }, [thinking]);
+    var particleOffsets = [
+      {x:-18,y:-22},{x:20,y:-18},{x:-12,y:-30},{x:15,y:-28},{x:-25,y:-15},{x:22,y:-25}
+    ];
+    var particles = thinking ? particleOffsets.map(function(p,i) {
+      return React.createElement("div", { key: "p"+i, style: {
+        position: "absolute", width: 3, height: 3, borderRadius: "50%",
+        background: i % 2 === 0 ? "#4ADE80" : "#22D3EE",
+        opacity: 0,
+        left: "50%", top: "50%",
+        animation: "masterLiParticle" + i + " 3s ease-out infinite",
+        animationDelay: (i * 0.5) + "s",
+        pointerEvents: "none"
+      } });
+    }) : null;
+
+    var character = MASTER_LI_PNG
+      ? React.createElement("img", {
+          src: MASTER_LI_PNG, alt: "Master Li",
+          style: { width: size, height: size, objectFit: "contain", position: "relative", zIndex: 1 }
+        })
+      : React.createElement("div", {
+          dangerouslySetInnerHTML: { __html: monkSVG },
+          style: { width: size, height: size, position: "relative", zIndex: 1 }
+        });
 
     return React.createElement("div", { style: {
       position: "relative", width: size, height: size, flexShrink: 0,
-      animation: thinking ? "masterLiFloat 4s ease-in-out infinite" : "none",
-      filter: "drop-shadow(0 2px 12px rgba(74,222,128,0.15))"
+      animation: "masterLiFloat 4s ease-in-out infinite",
+      filter: "drop-shadow(0 4px 16px rgba(74,222,128," + (thinking ? "0.35" : "0.15") + "))"
     } },
-      // Aura glow
+      // Aura rings
       React.createElement("div", { style: {
-        position: "absolute", inset: -size * 0.2, borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(74,222,128,0.12) 0%, transparent 70%)",
+        position: "absolute", inset: -size * 0.25, borderRadius: "50%",
+        background: "radial-gradient(circle, rgba(74,222,128," + (thinking ? "0.18" : "0.1") + ") 0%, transparent 70%)",
         animation: "masterLiGlow 4s ease-in-out infinite", pointerEvents: "none"
       } }),
-      // Lottie container
-      React.createElement("div", {
-        ref: containerRef,
-        style: { width: size, height: size, position: "relative", zIndex: 1 }
-      })
+      thinking && React.createElement("div", { style: {
+        position: "absolute", inset: -size * 0.15, borderRadius: "50%",
+        border: "1px solid rgba(74,222,128,0.12)",
+        animation: "masterLiRing 3s ease-in-out infinite", pointerEvents: "none"
+      } }),
+      thinking && React.createElement("div", { style: {
+        position: "absolute", inset: -size * 0.35, borderRadius: "50%",
+        border: "1px solid rgba(74,222,128,0.06)",
+        animation: "masterLiRing 3s ease-in-out infinite 0.5s", pointerEvents: "none"
+      } }),
+      particles,
+      character
     );
   };
 
@@ -2629,10 +2687,16 @@ function AICoachCard() {
   },
     // Inject keyframes
     React.createElement("style", null,
-      "@keyframes masterLiFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }" +
-      "@keyframes masterLiGlow { 0%,100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.1); } }" +
-      "@keyframes masterLiBreathe { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(1.012); } }" +
-      "@keyframes masterLiBeardSway { 0%,100% { transform: rotate(10deg); } 50% { transform: rotate(14deg); } }" +
+      "@keyframes masterLiFloat { 0%,100% { transform: translateY(0) rotate(0deg); } 25% { transform: translateY(-4px) rotate(0.5deg); } 75% { transform: translateY(-2px) rotate(-0.5deg); } 50% { transform: translateY(-6px) rotate(0deg); } }" +
+      "@keyframes masterLiGlow { 0%,100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.12); } }" +
+      "@keyframes masterLiBreathe { 0%,100% { transform: scaleY(1); opacity: 0.6; } 50% { transform: scaleY(1.3); opacity: 1; } }" +
+      "@keyframes masterLiRing { 0%,100% { transform: scale(1); opacity: 0.3; } 50% { transform: scale(1.08); opacity: 0.6; } }" +
+      "@keyframes masterLiParticle0 { 0% { opacity:0; transform:translate(0,0) scale(0); } 20% { opacity:0.8; transform:translate(-18px,-22px) scale(1); } 100% { opacity:0; transform:translate(-18px,-52px) scale(0); } }" +
+      "@keyframes masterLiParticle1 { 0% { opacity:0; transform:translate(0,0) scale(0); } 20% { opacity:0.8; transform:translate(20px,-18px) scale(1); } 100% { opacity:0; transform:translate(20px,-48px) scale(0); } }" +
+      "@keyframes masterLiParticle2 { 0% { opacity:0; transform:translate(0,0) scale(0); } 20% { opacity:0.8; transform:translate(-12px,-30px) scale(1); } 100% { opacity:0; transform:translate(-12px,-60px) scale(0); } }" +
+      "@keyframes masterLiParticle3 { 0% { opacity:0; transform:translate(0,0) scale(0); } 20% { opacity:0.8; transform:translate(15px,-28px) scale(1); } 100% { opacity:0; transform:translate(15px,-58px) scale(0); } }" +
+      "@keyframes masterLiParticle4 { 0% { opacity:0; transform:translate(0,0) scale(0); } 20% { opacity:0.8; transform:translate(-25px,-15px) scale(1); } 100% { opacity:0; transform:translate(-25px,-45px) scale(0); } }" +
+      "@keyframes masterLiParticle5 { 0% { opacity:0; transform:translate(0,0) scale(0); } 20% { opacity:0.8; transform:translate(22px,-25px) scale(1); } 100% { opacity:0; transform:translate(22px,-55px) scale(0); } }" +
       "@keyframes masterLiThink { 0% { opacity: 0.2; } 50% { opacity: 0.5; } 100% { opacity: 0.2; } }"
     ),
     // Header with avatar
@@ -3189,9 +3253,20 @@ function HomePage(p) {
         /*#__PURE__*/React.createElement("div", { className: "si-xp" }, xp + " XP")
       )
     ),
-    /*#__PURE__*/React.createElement("div", { className: "streak-num" },
-      /*#__PURE__*/React.createElement("div", { className: "sn-val", style: { color: getDaysWonStreak() > 0 ? "#FB923C" : "rgba(255,255,255,0.5)" } }, getDaysWonStreak()),
-      /*#__PURE__*/React.createElement("div", { className: "sn-label" }, "streak")
+    /*#__PURE__*/React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
+      getDaysWonStreak() >= 2 && /*#__PURE__*/React.createElement("button", {
+        onClick: function() {
+          var s = getDaysWonStreak(), x = totalXP(), l = getLv(x);
+          var t = "I'm on a " + s + "-day streak on Monkolution! " + l.emoji + " " + l.name + " — " + x.toLocaleString() + " XP. Can you keep up? https://app.monkolution.com";
+          if (navigator.share) { navigator.share({ text: t }).catch(function(){}); }
+          else { navigator.clipboard.writeText(t); }
+        },
+        style: { background: "rgba(251,146,60,0.12)", border: "1px solid rgba(251,146,60,0.15)", borderRadius: 8, padding: "4px 8px", color: "#FB923C", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }
+      }, "📤"),
+      /*#__PURE__*/React.createElement("div", { className: "streak-num" },
+        /*#__PURE__*/React.createElement("div", { className: "sn-val", style: { color: getDaysWonStreak() > 0 ? "#FB923C" : "rgba(255,255,255,0.5)" } }, getDaysWonStreak()),
+        /*#__PURE__*/React.createElement("div", { className: "sn-label" }, "streak")
+      )
     )
   ), _evoPenalty > 0 && /*#__PURE__*/React.createElement("div", {
     style: {
@@ -8437,12 +8512,35 @@ function FriendsPage() {
     else { navigator.clipboard.writeText(text); toast('Invite link copied!'); }
   }
 
-  // Build leaderboard (friends + me, sorted by XP)
+  function shareStreak() {
+    var streak = getDaysWonStreak();
+    var xp = totalXP();
+    var lv = getLv(xp);
+    var text = streak > 0
+      ? "I'm on a " + streak + "-day streak on Monkolution! " + lv.emoji + " " + lv.name + " with " + xp.toLocaleString() + " XP. Can you beat me? Join: https://app.monkolution.com"
+      : "I'm building better habits on Monkolution! " + lv.emoji + " " + lv.name + " with " + xp.toLocaleString() + " XP. Join me: https://app.monkolution.com";
+    if (navigator.share) { navigator.share({ text: text }).catch(function(){}); }
+    else { navigator.clipboard.writeText(text); toast('Streak shared!'); }
+  }
+
+  function nudgeFriend(f) {
+    var text = "Hey " + (f.display_name || "friend") + "! Get back on your streak! I'm at " + getDaysWonStreak() + " days — don't let me win! 💪🧬";
+    if (navigator.share) { navigator.share({ text: text }).catch(function(){}); }
+    else { navigator.clipboard.writeText(text); toast('Nudge copied — send it to them!'); }
+  }
+
+  var _lbSort = useState("xp"); var lbSort = _lbSort[0]; var setLbSort = _lbSort[1];
+
+  // Build leaderboard (friends + me, sorted by XP or streak)
   var leaderboard = friends.slice();
   var myEntry = me || { user_id: STORE.uid, display_name: (_np && _np.display_name) || "You", total_xp: totalXP(), streak: getDaysWonStreak(), is_me: true };
   if (me) leaderboard.push(me);
   else leaderboard.push(myEntry);
-  leaderboard.sort(function(a, b) { return (b.total_xp || 0) - (a.total_xp || 0); });
+  if (lbSort === "streak") {
+    leaderboard.sort(function(a, b) { return (b.streak || 0) - (a.streak || 0) || (b.total_xp || 0) - (a.total_xp || 0); });
+  } else {
+    leaderboard.sort(function(a, b) { return (b.total_xp || 0) - (a.total_xp || 0); });
+  }
 
   var cardStyle = { background: "rgba(255,255,255,0.04)", borderRadius: 16, padding: 16, marginBottom: 10 };
   var friendCard = function(f, i, showRank) {
@@ -8462,13 +8560,22 @@ function FriendsPage() {
         )
       ),
       React.createElement("div", { style: { textAlign: "right", flexShrink: 0 } },
-        React.createElement("div", { style: { fontSize: 18, fontWeight: 800, fontFamily: "'Syne',sans-serif", color: f.streak > 0 ? "#FB923C" : "rgba(255,255,255,0.2)" } }, f.streak || 0),
-        React.createElement("div", { style: { fontSize: 10, color: "rgba(255,255,255,0.3)" } }, "streak")
+        React.createElement("div", { style: { fontSize: 18, fontWeight: 800, fontFamily: "'Syne',sans-serif", color: f.streak > 0 ? "#FB923C" : "rgba(255,255,255,0.2)" } },
+          (f.streak >= 7 ? "🔥 " : f.streak >= 3 ? "✨ " : "") + (f.streak || 0)
+        ),
+        React.createElement("div", { style: { fontSize: 10, color: "rgba(255,255,255,0.3)" } }, f.streak >= 7 ? "on fire!" : f.streak >= 3 ? "rolling" : "streak")
       ),
-      !isMe && !showRank && f.friendship_id && React.createElement("button", {
-        onClick: function() { removeFriend(f.friendship_id); },
-        style: { background: "none", border: "none", color: "rgba(255,255,255,0.15)", fontSize: 16, cursor: "pointer", padding: 4, flexShrink: 0 }
-      }, "✕")
+      !isMe && !showRank && React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 } },
+        React.createElement("button", {
+          onClick: function() { nudgeFriend(f); },
+          title: "Nudge this friend",
+          style: { background: "rgba(251,146,60,0.12)", border: "none", borderRadius: 8, padding: "4px 8px", color: "#FB923C", fontSize: 12, cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }
+        }, "👊"),
+        f.friendship_id && React.createElement("button", {
+          onClick: function() { removeFriend(f.friendship_id); },
+          style: { background: "none", border: "none", color: "rgba(255,255,255,0.15)", fontSize: 12, cursor: "pointer", padding: "2px 4px", flexShrink: 0 }
+        }, "✕")
+      )
     );
   };
 
@@ -8557,6 +8664,23 @@ function FriendsPage() {
 
     // Leaderboard tab
     !loading && tab === "leaderboard" && React.createElement("div", null,
+      // Sort toggle + share streak
+      React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 } },
+        React.createElement("div", { style: { display: "flex", gap: 4, background: "rgba(255,255,255,0.04)", borderRadius: 8, padding: 2 } },
+          React.createElement("button", {
+            onClick: function() { setLbSort("xp"); },
+            style: { background: lbSort === "xp" ? "rgba(74,222,128,0.15)" : "none", border: "none", borderRadius: 6, padding: "5px 12px", color: lbSort === "xp" ? "#4ADE80" : "rgba(255,255,255,0.35)", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }
+          }, "By XP"),
+          React.createElement("button", {
+            onClick: function() { setLbSort("streak"); },
+            style: { background: lbSort === "streak" ? "rgba(251,146,60,0.15)" : "none", border: "none", borderRadius: 6, padding: "5px 12px", color: lbSort === "streak" ? "#FB923C" : "rgba(255,255,255,0.35)", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }
+          }, "By Streak")
+        ),
+        React.createElement("button", {
+          onClick: shareStreak,
+          style: { background: "rgba(251,146,60,0.12)", border: "1px solid rgba(251,146,60,0.2)", borderRadius: 8, padding: "5px 12px", color: "#FB923C", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }
+        }, "📤 Share My Streak")
+      ),
       leaderboard.length === 0 && React.createElement("div", { style: { textAlign: "center", padding: 40, color: "rgba(255,255,255,0.3)" } }, "Add friends to see the leaderboard"),
       leaderboard.map(function(f, i) { return friendCard(f, i, true); })
     ),
