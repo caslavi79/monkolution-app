@@ -2573,60 +2573,137 @@ function AICoachCard() {
     });
   }
 
-  return /*#__PURE__*/React.createElement("div", {
+  // Monk avatar component
+  var MonkAvatar = function(props) {
+    var size = props.size || 48;
+    var meditating = props.meditating;
+    return React.createElement("div", { style: {
+      position: "relative", width: size, height: size, flexShrink: 0
+    } },
+      // Glow ring
+      React.createElement("div", { style: {
+        position: "absolute", inset: -4, borderRadius: "50%",
+        background: "radial-gradient(circle, rgba(74,222,128,0.15) 0%, transparent 70%)",
+        animation: "masterLiGlow 3s ease-in-out infinite"
+      } }),
+      // Monk circle
+      React.createElement("div", { style: {
+        width: size, height: size, borderRadius: "50%",
+        background: "linear-gradient(135deg, #1a2e1a 0%, #0d1f0d 100%)",
+        border: "2px solid rgba(74,222,128,0.3)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: size * 0.55, lineHeight: 1,
+        animation: meditating ? "masterLiFloat 4s ease-in-out infinite" : "none",
+        boxShadow: "0 0 20px rgba(74,222,128,0.1), inset 0 0 15px rgba(74,222,128,0.05)"
+      } }, "\uD83E\uDDD8")
+    );
+  };
+
+  return React.createElement("div", {
     style: {
-      marginTop: 10, marginBottom: 10, borderRadius: 14,
-      background: "linear-gradient(135deg,rgba(74,222,128,0.06) 0%,rgba(34,211,238,0.04) 100%)",
-      border: "1px solid rgba(74,222,128,0.2)",
-      padding: "14px 16px",
-      boxShadow: "0 2px 12px rgba(74,222,128,0.06), 0 2px 8px rgba(0,0,0,0.35)"
+      marginTop: 10, marginBottom: 10, borderRadius: 18,
+      background: "linear-gradient(135deg, rgba(74,222,128,0.05) 0%, rgba(34,211,238,0.03) 50%, rgba(74,222,128,0.02) 100%)",
+      border: "1px solid rgba(74,222,128,0.15)",
+      padding: 0, overflow: "hidden",
+      boxShadow: "0 4px 24px rgba(74,222,128,0.06), 0 2px 8px rgba(0,0,0,0.4)"
     }
   },
-    /*#__PURE__*/React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: mode === "plan" ? 10 : 0 } },
-      /*#__PURE__*/React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 7 } },
-        /*#__PURE__*/React.createElement("span", { style: { fontSize: 15 } }, "\uD83E\uDDD8"),
-        /*#__PURE__*/React.createElement("span", { style: { fontSize: 12, fontWeight: 700, color: "#4ADE80", textTransform: "uppercase", letterSpacing: "0.06em" } }, "Master Li"),
-        /*#__PURE__*/React.createElement("span", { style: { fontSize: 9, color: "rgba(255,255,255,0.2)", marginLeft: 4 } }, "powered by Claude")
+    // Inject keyframes
+    React.createElement("style", null,
+      "@keyframes masterLiFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }" +
+      "@keyframes masterLiGlow { 0%,100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.1); } }" +
+      "@keyframes masterLiBreathe { 0%,100% { opacity: 0.3; } 50% { opacity: 0.6; } }" +
+      "@keyframes masterLiThink { 0% { opacity: 0.2; } 50% { opacity: 0.5; } 100% { opacity: 0.2; } }"
+    ),
+    // Header with avatar
+    React.createElement("div", { style: {
+      display: "flex", alignItems: "center", gap: 14, padding: "16px 18px",
+      borderBottom: (mode === "plan" || mode === "loading") ? "1px solid rgba(74,222,128,0.08)" : "none"
+    } },
+      React.createElement(MonkAvatar, { size: mode === "loading" ? 52 : 44, meditating: mode === "loading" || mode === "nudge" || mode === "idle" }),
+      React.createElement("div", { style: { flex: 1 } },
+        React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 8 } },
+          React.createElement("span", { style: { fontSize: 16, fontWeight: 800, color: "#f5f5f7", fontFamily: "'Syne','DM Sans',sans-serif", letterSpacing: "-0.3px" } }, "Master Li"),
+          React.createElement("span", { style: { fontSize: 9, color: "rgba(74,222,128,0.5)", fontWeight: 500 } }, "powered by Claude")
+        ),
+        React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.25)", marginTop: 2 } },
+          mode === "loading" ? "Contemplating..." : mode === "plan" ? "Your path is clear" : "Your AI monk guide"
+        )
       ),
-      mode !== "plan" && /*#__PURE__*/React.createElement("button", {
+      mode !== "plan" && React.createElement("button", {
         onClick: loadPlan,
         disabled: mode === "loading",
-        style: { background: "rgba(74,222,128,0.14)", border: "1px solid rgba(74,222,128,0.25)", color: "#4ADE80", fontSize: 11, fontWeight: 700, padding: "5px 12px", borderRadius: 100, cursor: mode === "loading" ? "default" : "pointer", fontFamily: "inherit", transition: "all 0.15s" }
-      }, mode === "loading" ? "Thinking..." : "Get Daily Plan")
+        style: {
+          background: mode === "loading" ? "rgba(74,222,128,0.08)" : "rgba(74,222,128,0.14)",
+          border: "1px solid rgba(74,222,128,0.25)", color: "#4ADE80",
+          fontSize: 12, fontWeight: 700, padding: "7px 16px", borderRadius: 100,
+          cursor: mode === "loading" ? "default" : "pointer",
+          fontFamily: "inherit", transition: "all 0.2s", whiteSpace: "nowrap"
+        }
+      }, mode === "loading" ? "🧘 Meditating..." : "Get Daily Plan")
     ),
-    // Smart nudge
-    (mode === "nudge" || mode === "idle") && nudge && /*#__PURE__*/React.createElement("div", {
-      style: { fontSize: 13, color: "rgba(255,255,255,0.6)", marginTop: 7, lineHeight: 1.55, fontStyle: "italic" }
-    }, "\u201C", nudge, "\u201D"),
+    // Smart nudge — speech bubble style
+    (mode === "nudge" || mode === "idle") && nudge && React.createElement("div", {
+      style: { padding: "0 18px 16px" }
+    },
+      React.createElement("div", { style: {
+        fontSize: 14, color: "rgba(255,255,255,0.65)", lineHeight: 1.6,
+        fontStyle: "italic", position: "relative", paddingLeft: 14,
+        borderLeft: "2px solid rgba(74,222,128,0.2)"
+      } }, nudge)
+    ),
     // Error
-    mode === "error" && /*#__PURE__*/React.createElement("div", {
-      style: { fontSize: 12, color: "#888", marginTop: 6 }
-    }, err || "AI temporarily unavailable"),
-    // Loading skeleton
-    mode === "loading" && /*#__PURE__*/React.createElement("div", { style: { marginTop: 10 } },
-      [80, 65, 45].map(function (w, i) {
-        return /*#__PURE__*/React.createElement("div", { key: i, style: { height: 10, background: "rgba(255,255,255,0.05)", borderRadius: 100, marginBottom: 7, width: w + "%" } });
-      })
+    mode === "error" && React.createElement("div", {
+      style: { padding: "0 18px 16px", fontSize: 12, color: "#888" }
+    }, err || "Master Li is temporarily unavailable"),
+    // Loading — meditation animation
+    mode === "loading" && React.createElement("div", { style: { padding: "8px 18px 18px", textAlign: "center" } },
+      React.createElement("div", { style: { display: "flex", justifyContent: "center", gap: 6, marginBottom: 8 } },
+        [0, 1, 2].map(function(i) {
+          return React.createElement("div", { key: i, style: {
+            width: 6, height: 6, borderRadius: "50%", background: "#4ADE80",
+            animation: "masterLiBreathe 1.5s ease-in-out infinite",
+            animationDelay: (i * 0.3) + "s"
+          } });
+        })
+      ),
+      React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.2)" } }, "Seeking wisdom...")
     ),
     // Daily plan
-    mode === "plan" && plan && /*#__PURE__*/React.createElement("div", null,
-      plan.greeting && /*#__PURE__*/React.createElement("div", { style: { fontSize: 13, color: "rgba(255,255,255,0.5)", marginBottom: 10, fontStyle: "italic" } }, plan.greeting),
+    mode === "plan" && plan && React.createElement("div", { style: { padding: "12px 18px 16px" } },
+      plan.greeting && React.createElement("div", { style: {
+        fontSize: 14, color: "rgba(255,255,255,0.55)", marginBottom: 14, fontStyle: "italic",
+        paddingLeft: 14, borderLeft: "2px solid rgba(74,222,128,0.15)"
+      } }, plan.greeting),
       plan.priorities && plan.priorities.map(function (p, i) {
-        return /*#__PURE__*/React.createElement("div", {
-          key: i, style: { display: "flex", gap: 10, padding: "7px 0", borderTop: i > 0 ? "1px solid rgba(255,255,255,0.05)" : "none" }
+        return React.createElement("div", {
+          key: i, style: {
+            display: "flex", gap: 12, padding: "10px 0",
+            borderTop: i > 0 ? "1px solid rgba(255,255,255,0.04)" : "none"
+          }
         },
-          /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: p.type === "habit" ? "#4ADE80" : "#22D3EE", fontWeight: 800, width: 16, textAlign: "center", flexShrink: 0, marginTop: 1 } }, i + 1),
-          /*#__PURE__*/React.createElement("div", null,
-            /*#__PURE__*/React.createElement("div", { style: { fontSize: 13, fontWeight: 600 } }, p.name),
-            /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: "#888", marginTop: 1 } }, p.reason)
+          React.createElement("div", { style: {
+            width: 24, height: 24, borderRadius: 8,
+            background: p.type === "habit" ? "rgba(74,222,128,0.12)" : "rgba(34,211,238,0.12)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 11, fontWeight: 800, flexShrink: 0,
+            color: p.type === "habit" ? "#4ADE80" : "#22D3EE"
+          } }, i + 1),
+          React.createElement("div", null,
+            React.createElement("div", { style: { fontSize: 14, fontWeight: 600 } }, p.name),
+            React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2, lineHeight: 1.4 } }, p.reason)
           )
         );
       }),
-      plan.insight && /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "#22D3EE", marginTop: 10, padding: "8px 12px", background: "rgba(34,211,238,0.07)", borderRadius: 8, lineHeight: 1.55, border: "1px solid rgba(34,211,238,0.12)" } }, "\uD83D\uDCA1 ", plan.insight),
-      /*#__PURE__*/React.createElement("button", {
+      plan.insight && React.createElement("div", { style: {
+        fontSize: 13, color: "#22D3EE", marginTop: 14, padding: "10px 14px",
+        background: "rgba(34,211,238,0.06)", borderRadius: 10, lineHeight: 1.55,
+        border: "1px solid rgba(34,211,238,0.1)"
+      } }, "\uD83D\uDCA1 ", plan.insight),
+      React.createElement("button", {
         onClick: loadPlan,
-        style: { background: "none", border: "none", color: "rgba(255,255,255,0.3)", fontSize: 11, cursor: "pointer", fontFamily: "inherit", marginTop: 8, padding: 0 }
-      }, "\u21BB Refresh plan")
+        style: { background: "none", border: "none", color: "rgba(255,255,255,0.25)", fontSize: 11, cursor: "pointer", fontFamily: "inherit", marginTop: 10, padding: 0 }
+      }, "\u21BB Ask Master Li again")
     )
   );
 }
