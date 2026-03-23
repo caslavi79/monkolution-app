@@ -203,6 +203,7 @@ async function deleteAllUserData() {
 }
 
 function _id() { return Date.now().toString(36) + Math.random().toString(36).substr(2,9); }
+function generateFriendCode() { var c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',r=''; for(var i=0;i<6;i++) r+=c[Math.floor(Math.random()*c.length)]; return r; }
 function _today() { return new Date().toISOString().split('T')[0]; }
 function _month() { var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1<10?'0':'')+(d.getMonth()+1); }
 function _weekNum() { var d=new Date(),start=new Date(d.getFullYear(),0,1); return Math.ceil(((d-start)/86400000+start.getDay()+1)/7); }
@@ -1469,11 +1470,11 @@ function loadNotifProfile() {
   if (!STORE.uid) return;
   var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   sb.from('profiles').select('*').eq('user_id', STORE.uid).maybeSingle().then(function(res) {
-    _np = res.data || { habits_enabled: false, habits_hour: 9, tasks_enabled: false, tasks_hour: 9, notif_tz: tz };
-    if (!_np.notif_tz || _np.notif_tz !== tz) {
-      _np.notif_tz = tz;
-      sb.from('profiles').upsert(Object.assign({ user_id: STORE.uid }, _np));
-    }
+    _np = res.data || { habits_enabled: false, habits_hour: 9, tasks_enabled: false, tasks_hour: 9, digest_enabled: false, digest_hour: 7, notif_tz: tz, display_name: '', friend_code: null, xp_public: true };
+    var needsSave = false;
+    if (!_np.notif_tz || _np.notif_tz !== tz) { _np.notif_tz = tz; needsSave = true; }
+    if (!_np.friend_code) { _np.friend_code = generateFriendCode(); needsSave = true; }
+    if (needsSave) sb.from('profiles').upsert(Object.assign({ user_id: STORE.uid }, _np));
     _npNotify();
   });
 }
@@ -1537,7 +1538,7 @@ function BellButton(props) {
     setTimeout(function() { setShowPopup(false); }, 5000);
   }
 
-  var p = _np || { habits_enabled: false, habits_hour: 9, tasks_enabled: false, tasks_hour: 9 };
+  var p = _np || { habits_enabled: false, habits_hour: 9, tasks_enabled: false, tasks_hour: 9, digest_enabled: false, digest_hour: 7 };
   var group = guideAttr === "bell-btn-tasks" ? "tasks" : "habits";
   var hour = p[group + '_hour'] !== undefined ? p[group + '_hour'] : 9;
   var displayOn = showPopup ? willBeOn : enabled;
@@ -1591,7 +1592,7 @@ function NotifSettingsSection() {
     return function() { _npCbs = _npCbs.filter(function(f){ return f !== fn; }); };
   }, []);
 
-  var p = _np || { habits_enabled: false, habits_hour: 9, tasks_enabled: false, tasks_hour: 9 };
+  var p = _np || { habits_enabled: false, habits_hour: 9, tasks_enabled: false, tasks_hour: 9, digest_enabled: false, digest_hour: 7 };
   var card = { background: "rgba(255,255,255,0.04)", borderRadius: 16, padding: "0 16px", marginTop: 8 };
   var row = { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 0", borderBottom: "1px solid rgba(255,255,255,0.06)" };
   var rowLast = { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 0" };
@@ -1635,14 +1636,23 @@ function NotifSettingsSection() {
         React.createElement(Toggle, { on: p.habits_enabled, onToggle: function() { saveNotifProfile({ habits_enabled: !p.habits_enabled }); } })
       ),
       p.habits_enabled && React.createElement(TimeSelect, { val: p.habits_hour, onChange: function(v) { saveNotifProfile({ habits_hour: v }); } }),
-      React.createElement("div", { style: rowLast },
+      React.createElement("div", { style: row },
         React.createElement("div", null,
           React.createElement("div", { style: { fontSize: 15, color: "#f5f5f7", fontWeight: 500 } }, "✅ Tasks reminder"),
           React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.35)", marginTop: 2 } }, p.tasks_enabled ? ("Sends daily at " + hourLabel(p.tasks_hour)) : "Off")
         ),
         React.createElement(Toggle, { on: p.tasks_enabled, onToggle: function() { saveNotifProfile({ tasks_enabled: !p.tasks_enabled }); } })
       ),
-      p.tasks_enabled && React.createElement(TimeSelect, { val: p.tasks_hour, onChange: function(v) { saveNotifProfile({ tasks_hour: v }); } })
+      p.tasks_enabled && React.createElement(TimeSelect, { val: p.tasks_hour, onChange: function(v) { saveNotifProfile({ tasks_hour: v }); } }),
+      React.createElement("div", { style: rowLast },
+        React.createElement("div", null,
+          React.createElement("div", { style: { fontSize: 15, color: "#f5f5f7", fontWeight: 500 } }, "🧠 AI Daily Digest"),
+          React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.35)", marginTop: 2 } }, p.digest_enabled ? ("Sends daily at " + hourLabel(p.digest_hour)) : "Off"),
+          React.createElement("div", { style: { fontSize: 11, color: "rgba(74,222,128,0.6)", marginTop: 2 } }, "Personalized AI coaching briefing")
+        ),
+        React.createElement(Toggle, { on: p.digest_enabled, onToggle: function() { saveNotifProfile({ digest_enabled: !p.digest_enabled }); } })
+      ),
+      p.digest_enabled && React.createElement(TimeSelect, { val: p.digest_hour, onChange: function(v) { saveNotifProfile({ digest_hour: v }); } })
     )
   );
 }
@@ -4680,7 +4690,23 @@ function ProfilePage({
   /*#__PURE__*/React.createElement("div", { "data-guide": "evo-card", className: "profile-card" },
     /*#__PURE__*/React.createElement("div", { className: "pc-creature", style: { animation: "float 3s ease-in-out infinite" } }, lv.emoji),
     /*#__PURE__*/React.createElement("div", { className: "pc-name", style: _evoPenalty > 0 ? { color: "#FF453A" } : {} }, lv.name, _evoPenalty > 0 ? " \u2B07" : ""),
+    _np && /*#__PURE__*/React.createElement("div", { style: { margin: "6px auto 4px", maxWidth: 200 } },
+      /*#__PURE__*/React.createElement("input", {
+        value: _np.display_name || '',
+        placeholder: "Set display name",
+        onChange: function(e) { saveNotifProfile({ display_name: e.target.value }); },
+        style: { width: "100%", background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 10, padding: "8px 12px", color: "#f5f5f7", fontFamily: "inherit", fontSize: 14, textAlign: "center", outline: "none" }
+      })
+    ),
     /*#__PURE__*/React.createElement("div", { className: "pc-xp" }, xp.toLocaleString() + " XP"),
+    _np && _np.friend_code && /*#__PURE__*/React.createElement("div", {
+      style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 4, cursor: "pointer" },
+      onClick: function() { navigator.clipboard.writeText(_np.friend_code); toast('Friend code copied!'); }
+    },
+      /*#__PURE__*/React.createElement("span", { style: { fontSize: 12, color: "rgba(255,255,255,0.35)" } }, "Friend Code: "),
+      /*#__PURE__*/React.createElement("span", { style: { fontSize: 14, fontWeight: 700, color: "#4ADE80", fontFamily: "monospace", letterSpacing: 2 } }, _np.friend_code),
+      /*#__PURE__*/React.createElement("span", { style: { fontSize: 12, color: "rgba(255,255,255,0.25)" } }, "📋")
+    ),
     _evoPenalty > 0 && /*#__PURE__*/React.createElement("div", {
       style: { fontSize: 13, marginTop: 6, borderRadius: 8, padding: "6px 12px", color: "rgba(255,69,58,0.9)", background: "rgba(255,69,58,0.08)" }
     }, "Regressed from ", _evo.earned.name, " \xB7 ", _evoReason, " \xB7 log habits to recover"),
@@ -8243,10 +8269,224 @@ var TABS = [{
   l: "Money",
   i: "💰"
 }, {
+  id: "friends",
+  l: "Friends",
+  i: "👥"
+}, {
   id: "profile",
   l: "Profile",
   i: "🧬"
 }];
+
+// ─── Friends / Leaderboard Page ────────────────────────────────────────────
+function FriendsPage() {
+  var _s = useState("friends"); var tab = _s[0]; var setTab = _s[1];
+  var _f = useState([]); var friends = _f[0]; var setFriends = _f[1];
+  var _r = useState([]); var requests = _r[0]; var setRequests = _r[1];
+  var _me = useState(null); var me = _me[0]; var setMe = _me[1];
+  var _lo = useState(true); var loading = _lo[0]; var setLoading = _lo[1];
+  var _ao = useState(false); var addOpen = _ao[0]; var setAddOpen = _ao[1];
+  var _ci = useState(""); var codeInput = _ci[0]; var setCodeInput = _ci[1];
+  var _ae = useState(""); var addErr = _ae[0]; var setAddErr = _ae[1];
+  var _as = useState(""); var addSuccess = _as[0]; var setAddSuccess = _as[1];
+  var _al = useState(false); var addLoading = _al[0]; var setAddLoading = _al[1];
+  var toast = useToast();
+
+  function loadData() {
+    setLoading(true);
+    Promise.all([
+      sb.functions.invoke('social', { body: { action: 'get_friends' } }),
+      sb.functions.invoke('social', { body: { action: 'get_requests' } })
+    ]).then(function(res) {
+      var fd = res[0].data; var rd = res[1].data;
+      if (fd) { setFriends(fd.friends || []); setMe(fd.me || null); }
+      if (rd) { setRequests(rd.requests || []); }
+      setLoading(false);
+    }).catch(function() { setLoading(false); });
+  }
+  useEffect(loadData, []);
+
+  function sendRequest() {
+    if (!codeInput.trim()) return;
+    setAddErr(""); setAddSuccess(""); setAddLoading(true);
+    sb.functions.invoke('social', { body: { action: 'send_request', friend_code: codeInput.trim().toUpperCase() } }).then(function(res) {
+      setAddLoading(false);
+      if (res.data && res.data.error) { setAddErr(res.data.error); return; }
+      if (res.error) { setAddErr(res.error.message || 'Failed'); return; }
+      setAddSuccess("Request sent to " + (res.data.friend_name || 'user') + "!");
+      setCodeInput(""); loadData();
+    }).catch(function(e) { setAddLoading(false); setAddErr(e.message); });
+  }
+
+  function respond(id, accept) {
+    sb.functions.invoke('social', { body: { action: 'respond_request', friendship_id: id, accept: accept } }).then(function() {
+      toast(accept ? 'Friend added!' : 'Request declined');
+      loadData();
+    });
+  }
+
+  function removeFriend(fid) {
+    sb.functions.invoke('social', { body: { action: 'remove_friend', friendship_id: fid } }).then(function() {
+      toast('Friend removed');
+      loadData();
+    });
+  }
+
+  function shareCode() {
+    var code = _np && _np.friend_code ? _np.friend_code : '...';
+    var text = "Join me on Monkolution! Add me with code: " + code + " — https://app.monkolution.com";
+    if (navigator.share) { navigator.share({ text: text }).catch(function(){}); }
+    else { navigator.clipboard.writeText(text); toast('Invite link copied!'); }
+  }
+
+  // Build leaderboard (friends + me, sorted by XP)
+  var leaderboard = friends.slice();
+  if (me) leaderboard.push(me);
+  leaderboard.sort(function(a, b) { return (b.total_xp || 0) - (a.total_xp || 0); });
+
+  var cardStyle = { background: "rgba(255,255,255,0.04)", borderRadius: 16, padding: 16, marginBottom: 10 };
+  var friendCard = function(f, i, showRank) {
+    var lv = getLv(f.total_xp || 0);
+    var isMe = f.is_me;
+    return React.createElement("div", { key: f.user_id || i, style: Object.assign({}, cardStyle, {
+      display: "flex", alignItems: "center", gap: 12,
+      border: isMe ? "1px solid rgba(74,222,128,0.2)" : "1px solid transparent",
+      background: isMe ? "rgba(74,222,128,0.04)" : "rgba(255,255,255,0.04)"
+    }) },
+      showRank && React.createElement("div", { style: { fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: i < 3 ? 22 : 16, color: i === 0 ? "#FFD60A" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : "rgba(255,255,255,0.3)", width: 32, textAlign: "center", flexShrink: 0 } }, i + 1),
+      React.createElement("div", { style: { fontSize: 28, flexShrink: 0 } }, lv.emoji),
+      React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+        React.createElement("div", { style: { fontSize: 15, fontWeight: 600, color: "#f5f5f7" } }, (f.display_name || "User") + (isMe ? " (you)" : "")),
+        React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 2 } },
+          lv.name + " · " + (f.total_xp || 0).toLocaleString() + " XP"
+        )
+      ),
+      React.createElement("div", { style: { textAlign: "right", flexShrink: 0 } },
+        React.createElement("div", { style: { fontSize: 18, fontWeight: 800, fontFamily: "'Syne',sans-serif", color: f.streak > 0 ? "#FB923C" : "rgba(255,255,255,0.2)" } }, f.streak || 0),
+        React.createElement("div", { style: { fontSize: 10, color: "rgba(255,255,255,0.3)" } }, "streak")
+      ),
+      !isMe && !showRank && f.friendship_id && React.createElement("button", {
+        onClick: function() { removeFriend(f.friendship_id); },
+        style: { background: "none", border: "none", color: "rgba(255,255,255,0.15)", fontSize: 16, cursor: "pointer", padding: 4, flexShrink: 0 }
+      }, "✕")
+    );
+  };
+
+  var tabStyle = function(t) { return {
+    background: tab === t ? "rgba(255,255,255,0.1)" : "none",
+    border: "none", borderRadius: 100, padding: "8px 16px", color: tab === t ? "#f5f5f7" : "rgba(255,255,255,0.35)",
+    fontFamily: "inherit", fontSize: 13, fontWeight: 600, cursor: "pointer", position: "relative"
+  }; };
+
+  return React.createElement("div", { className: "appear pg" },
+    // Header
+    React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 } },
+      React.createElement("div", null,
+        React.createElement("h2", { style: { fontSize: 24, fontWeight: 800, fontFamily: "'Syne',sans-serif" } }, "Friends"),
+        React.createElement("p", { style: { fontSize: 13, color: "rgba(255,255,255,0.4)", marginTop: 2 } },
+          friends.length + " friend" + (friends.length !== 1 ? "s" : "") + (requests.length > 0 ? " · " + requests.length + " pending" : "")
+        )
+      ),
+      React.createElement("div", { style: { display: "flex", gap: 8 } },
+        React.createElement("button", {
+          onClick: shareCode,
+          style: { background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 10, padding: "8px 12px", color: "#f5f5f7", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }
+        }, "📤 Invite"),
+        React.createElement("button", {
+          onClick: function() { setAddOpen(!addOpen); setAddErr(""); setAddSuccess(""); },
+          style: { background: "#4ADE80", border: "none", borderRadius: 10, padding: "8px 14px", color: "#000", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }
+        }, "+ Add")
+      )
+    ),
+
+    // Add friend sheet
+    addOpen && React.createElement("div", { style: Object.assign({}, cardStyle, { marginBottom: 16 }) },
+      React.createElement("div", { style: { fontSize: 14, fontWeight: 600, marginBottom: 10 } }, "Add a friend by code"),
+      React.createElement("div", { style: { display: "flex", gap: 8 } },
+        React.createElement("input", {
+          value: codeInput,
+          onChange: function(e) { setCodeInput(e.target.value.toUpperCase()); setAddErr(""); setAddSuccess(""); },
+          onKeyDown: function(e) { if (e.key === 'Enter') sendRequest(); },
+          placeholder: "e.g. A3K9MP",
+          maxLength: 6,
+          style: { flex: 1, background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 10, padding: "10px 14px", color: "#f5f5f7", fontFamily: "monospace", fontSize: 16, letterSpacing: 3, textTransform: "uppercase", outline: "none", textAlign: "center" }
+        }),
+        React.createElement("button", {
+          onClick: sendRequest, disabled: addLoading || codeInput.length < 4,
+          style: { background: "#4ADE80", border: "none", borderRadius: 10, padding: "10px 16px", color: "#000", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", opacity: addLoading || codeInput.length < 4 ? 0.5 : 1 }
+        }, addLoading ? "..." : "Send")
+      ),
+      addErr && React.createElement("div", { style: { fontSize: 12, color: "#FF453A", marginTop: 8 } }, addErr),
+      addSuccess && React.createElement("div", { style: { fontSize: 12, color: "#4ADE80", marginTop: 8 } }, addSuccess),
+      _np && _np.friend_code && React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.3)", marginTop: 10, textAlign: "center" } },
+        "Your code: ", React.createElement("span", { style: { color: "#4ADE80", fontFamily: "monospace", fontWeight: 700, letterSpacing: 2 } }, _np.friend_code)
+      )
+    ),
+
+    // Tab bar
+    React.createElement("div", { style: { display: "flex", gap: 4, marginBottom: 16, background: "rgba(255,255,255,0.04)", borderRadius: 100, padding: 3 } },
+      React.createElement("button", { onClick: function() { setTab("friends"); }, style: tabStyle("friends") }, "Friends"),
+      React.createElement("button", { onClick: function() { setTab("leaderboard"); }, style: tabStyle("leaderboard") }, "Leaderboard"),
+      React.createElement("button", { onClick: function() { setTab("requests"); }, style: tabStyle("requests") },
+        "Requests", requests.length > 0 && React.createElement("span", {
+          style: { background: "#FF453A", color: "#fff", fontSize: 10, fontWeight: 700, borderRadius: 100, padding: "2px 6px", marginLeft: 6 }
+        }, requests.length)
+      )
+    ),
+
+    // Loading
+    loading && React.createElement("div", { style: { textAlign: "center", padding: 40, color: "rgba(255,255,255,0.3)" } }, "Loading..."),
+
+    // Friends tab
+    !loading && tab === "friends" && React.createElement("div", null,
+      friends.length === 0 && React.createElement("div", { style: { textAlign: "center", padding: "48px 16px" } },
+        React.createElement("div", { style: { fontSize: 48, marginBottom: 16 } }, "👥"),
+        React.createElement("div", { style: { fontSize: 16, fontWeight: 600, marginBottom: 8 } }, "No friends yet"),
+        React.createElement("div", { style: { fontSize: 13, color: "rgba(255,255,255,0.4)", marginBottom: 20, lineHeight: 1.6 } },
+          "Share your friend code or tap + Add to connect with someone."
+        ),
+        _np && _np.friend_code && React.createElement("div", { style: { fontSize: 13, color: "rgba(255,255,255,0.3)" } },
+          "Your code: ", React.createElement("span", {
+            style: { color: "#4ADE80", fontFamily: "monospace", fontWeight: 700, fontSize: 20, letterSpacing: 3, cursor: "pointer" },
+            onClick: function() { navigator.clipboard.writeText(_np.friend_code); toast("Copied!"); }
+          }, _np.friend_code)
+        )
+      ),
+      friends.map(function(f, i) { return friendCard(f, i, false); })
+    ),
+
+    // Leaderboard tab
+    !loading && tab === "leaderboard" && React.createElement("div", null,
+      leaderboard.length === 0 && React.createElement("div", { style: { textAlign: "center", padding: 40, color: "rgba(255,255,255,0.3)" } }, "Add friends to see the leaderboard"),
+      leaderboard.map(function(f, i) { return friendCard(f, i, true); })
+    ),
+
+    // Requests tab
+    !loading && tab === "requests" && React.createElement("div", null,
+      requests.length === 0 && React.createElement("div", { style: { textAlign: "center", padding: 40, color: "rgba(255,255,255,0.3)" } }, "No pending requests"),
+      requests.map(function(r) {
+        var lv = getLv(r.total_xp || 0);
+        return React.createElement("div", { key: r.id, style: Object.assign({}, cardStyle, { display: "flex", alignItems: "center", gap: 12 }) },
+          React.createElement("div", { style: { fontSize: 28 } }, lv.emoji),
+          React.createElement("div", { style: { flex: 1 } },
+            React.createElement("div", { style: { fontSize: 15, fontWeight: 600 } }, r.display_name || "User"),
+            React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.4)" } }, lv.name + " · " + (r.total_xp || 0).toLocaleString() + " XP")
+          ),
+          React.createElement("div", { style: { display: "flex", gap: 8 } },
+            React.createElement("button", {
+              onClick: function() { respond(r.id, true); },
+              style: { background: "#4ADE80", border: "none", borderRadius: 8, padding: "8px 14px", color: "#000", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", fontSize: 13 }
+            }, "Accept"),
+            React.createElement("button", {
+              onClick: function() { respond(r.id, false); },
+              style: { background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 8, padding: "8px 14px", color: "rgba(255,255,255,0.5)", fontWeight: 600, cursor: "pointer", fontFamily: "inherit", fontSize: 13 }
+            }, "Decline")
+          )
+        );
+      })
+    )
+  );
+}
 
 // ─── Login / Signup Screen ─────────────────────────────────────────────────
 function LoginScreen({ onLogin }) {
@@ -8321,6 +8561,14 @@ function LoginScreen({ onLogin }) {
             onClick:function(){ setMode(mode==="signup"?"login":"signup"); setErr(""); setPassword(""); setConfirm(""); },
             style:{ background:"none", border:"none", color:"#4ADE80", fontFamily:"inherit", fontSize:13, fontWeight:600, cursor:"pointer", padding:0 }
           }, mode==="signup" ? "Log in" : "Create account")
+        ),
+        /*#__PURE__*/React.createElement("div", { style:{ textAlign:"center", marginTop:32, paddingTop:20, borderTop:"1px solid #222" } },
+          /*#__PURE__*/React.createElement("a", {
+            href:"https://monkolution.com",
+            style:{ fontSize:13, color:"rgba(255,255,255,0.3)", textDecoration:"none", transition:"color 0.2s" },
+            onMouseOver:function(e){ e.target.style.color="rgba(255,255,255,0.6)"; },
+            onMouseOut:function(e){ e.target.style.color="rgba(255,255,255,0.3)"; }
+          }, "\u2190 Back to monkolution.com")
         )
       )
     )
@@ -8417,6 +8665,8 @@ function AppShell({
         return /*#__PURE__*/React.createElement(FinancePage, null);
       case "projects":
         return /*#__PURE__*/React.createElement(ProjectsPage, null);
+      case "friends":
+        return /*#__PURE__*/React.createElement(FriendsPage, null);
       case "profile":
         return /*#__PURE__*/React.createElement(ProfilePage, {
           onLogout: onLogout,

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monkolution | Redirecting...</title>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #050505; color: #f0f0f0; font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.container { text-align: center; max-width: 420px; }
+.emoji { font-size: 64px; margin-bottom: 16px; }
+h1 { font-size: 24px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; }
+p { font-size: 15px; color: rgba(255,255,255,0.5); margin-bottom: 24px; line-height: 1.6; }
+.countdown { font-size: 13px; color: rgba(255,255,255,0.3); margin-bottom: 24px; }
+.buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.btn { padding: 12px 24px; border-radius: 100px; font-weight: 700; font-size: 15px; text-decoration: none; transition: all 0.25s; font-family: inherit; }
+.btn-app { background: #4ADE80; color: #000; }
+.btn-app:hover { box-shadow: 0 0 30px rgba(74,222,128,0.15); transform: translateY(-1px); }
+.btn-site { background: #1a1a1a; color: #f0f0f0; border: 1px solid #222; }
+.btn-site:hover { border-color: #555; }
+</style>
+</head>
+<body>
+<div class="container">
+<div class="emoji">🧬</div>
+<h1>Looks like a wrong turn</h1>
+<p>This page doesn't exist, but we'll get you where you need to go.</p>
+<div class="countdown" id="countdown">Redirecting to the app in 5 seconds...</div>
+<div class="buttons">
+<a href="/" class="btn btn-app">Open the App</a>
+<a href="https://monkolution.com" class="btn btn-site">Go to Website</a>
+</div>
+</div>
+<script>
+var seconds = 5;
+var el = document.getElementById('countdown');
+var timer = setInterval(function() {
+  seconds--;
+  if (seconds <= 0) {
+    clearInterval(timer);
+    window.location.href = '/';
+  } else {
+    el.textContent = 'Redirecting to the app in ' + seconds + ' second' + (seconds === 1 ? '' : 's') + '...';
+  }
+}, 1000);
+</script>
+</body>
+</html>
