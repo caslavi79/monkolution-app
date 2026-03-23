@@ -230,7 +230,7 @@ function dbWrite(promise, label) {
 }
 
 // ═══════════════════════════════════════
-// AI COACH — calls Supabase Edge Function
+// MASTER LI — AI guide powered by Claude, calls Supabase Edge Function
 // ═══════════════════════════════════════
 async function aiCoach(action, extra) {
   try {
@@ -338,7 +338,7 @@ async function aiCoach(action, extra) {
     if (res.error) return { error: res.error.message || "AI request failed" };
     return res.data || { error: "Empty response" };
   } catch (e) {
-    console.error("[AI Coach error]", e);
+    console.error("[Master Li error]", e);
     return { error: e.message || "AI unavailable" };
   }
 }
@@ -1648,7 +1648,7 @@ function NotifSettingsSection() {
         React.createElement("div", null,
           React.createElement("div", { style: { fontSize: 15, color: "#f5f5f7", fontWeight: 500 } }, "🧠 AI Daily Digest"),
           React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.35)", marginTop: 2 } }, p.digest_enabled ? ("Sends daily at " + hourLabel(p.digest_hour)) : "Off"),
-          React.createElement("div", { style: { fontSize: 11, color: "rgba(74,222,128,0.6)", marginTop: 2 } }, "Personalized AI coaching briefing")
+          React.createElement("div", { style: { fontSize: 11, color: "rgba(74,222,128,0.6)", marginTop: 2 } }, "Personalized briefing from Master Li (Claude AI)")
         ),
         React.createElement(Toggle, { on: p.digest_enabled, onToggle: function() { saveNotifProfile({ digest_enabled: !p.digest_enabled }); } })
       ),
@@ -2546,7 +2546,7 @@ function Scene(p) {
 
 // ═══════════════════════════════════════
 // ═══════════════════════════════════════
-// AI COACH CARD — shows on Today page
+// MASTER LI CARD — shows on Today page
 // ═══════════════════════════════════════
 function AICoachCard() {
   const [mode, setMode] = useState("idle"); // idle, loading, nudge, plan, error
@@ -2584,8 +2584,9 @@ function AICoachCard() {
   },
     /*#__PURE__*/React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: mode === "plan" ? 10 : 0 } },
       /*#__PURE__*/React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 7 } },
-        /*#__PURE__*/React.createElement("span", { style: { fontSize: 15 } }, "\uD83E\uDDE0"),
-        /*#__PURE__*/React.createElement("span", { style: { fontSize: 12, fontWeight: 700, color: "#4ADE80", textTransform: "uppercase", letterSpacing: "0.06em" } }, "AI Coach")
+        /*#__PURE__*/React.createElement("span", { style: { fontSize: 15 } }, "\uD83E\uDDD8"),
+        /*#__PURE__*/React.createElement("span", { style: { fontSize: 12, fontWeight: 700, color: "#4ADE80", textTransform: "uppercase", letterSpacing: "0.06em" } }, "Master Li"),
+        /*#__PURE__*/React.createElement("span", { style: { fontSize: 9, color: "rgba(255,255,255,0.2)", marginLeft: 4 } }, "powered by Claude")
       ),
       mode !== "plan" && /*#__PURE__*/React.createElement("button", {
         onClick: loadPlan,
@@ -3126,7 +3127,7 @@ function HomePage(p) {
       );
     })
   ),
-  /* ── AI Coach Card ── */
+  /* ── Master Li Card ── */
   /*#__PURE__*/React.createElement(AICoachCard, null),
   debts.length > 0 && debtGoalTotal > 0 && /*#__PURE__*/React.createElement("div", {
     className: "cd",
