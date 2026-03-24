@@ -2877,13 +2877,17 @@ function WeeklyReviewSheet(p) {
 
   return /*#__PURE__*/React.createElement(Sheet, { open: p.open, onClose: p.onClose, title: "Weekly Review" },
     loading && /*#__PURE__*/React.createElement("div", { style: { textAlign: "center", padding: "40px 0" } },
-      /*#__PURE__*/React.createElement("div", { style: { fontSize: 32, marginBottom: 12, animation: "pulse 2s ease-in-out infinite" } }, "\uD83E\uDDE0"),
-      /*#__PURE__*/React.createElement("div", { style: { fontSize: 14, color: "#888" } }, "Analyzing your week...")
+      /*#__PURE__*/React.createElement("img", { src: "master-li-4.png", alt: "Master Li", style: { width: 64, height: 64, borderRadius: "50%", objectFit: "cover", border: "1.5px solid rgba(74,222,128,0.2)", marginBottom: 12, animation: "masterLiFloat 5s ease-in-out infinite", filter: "drop-shadow(0 4px 16px rgba(74,222,128,0.2))" } }),
+      /*#__PURE__*/React.createElement("div", { style: { fontSize: 14, color: "rgba(255,255,255,0.5)" } }, "Master Li is reviewing your week..."),
+      /*#__PURE__*/React.createElement("div", { style: { display: "flex", justifyContent: "center", gap: 6, marginTop: 12 } },
+        [0,1,2].map(function(i) { return /*#__PURE__*/React.createElement("div", { key: i, style: { width: 6, height: 6, borderRadius: "50%", background: "#4ADE80", animation: "masterLiBreathe 1.5s ease-in-out infinite", animationDelay: (i*0.3)+"s" } }); })
+      )
     ),
     err && /*#__PURE__*/React.createElement("div", { style: { textAlign: "center", padding: "40px 0", color: "#888" } }, err),
     review && /*#__PURE__*/React.createElement("div", { style: { padding: "8px 0" } },
-      // Score
+      // Master Li header with score
       /*#__PURE__*/React.createElement("div", { style: { textAlign: "center", marginBottom: 16 } },
+        /*#__PURE__*/React.createElement("img", { src: review.score >= 7 ? "master-li-1.png" : review.score >= 5 ? "master-li-2.png" : "master-li-4.png", alt: "Master Li", style: { width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: "1.5px solid rgba(74,222,128,0.2)", marginBottom: 8, filter: "drop-shadow(0 4px 16px rgba(74,222,128,0.15))" } }),
         /*#__PURE__*/React.createElement("div", { style: { fontSize: 48, fontFamily: "'Syne',sans-serif", fontWeight: 800, color: review.score >= 7 ? "#4ADE80" : review.score >= 5 ? "#FB923C" : "#F87171" } }, review.score),
         /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "#888" } }, "out of 10")
       ),
@@ -2922,7 +2926,12 @@ function WeeklyReviewSheet(p) {
       // Motivational
       review.motivational && /*#__PURE__*/React.createElement("div", {
         style: { textAlign: "center", fontSize: 14, fontStyle: "italic", color: "#4ADE80", padding: "12px 0", marginTop: 8, borderTop: "1px solid rgba(255,255,255,0.05)" }
-      }, review.motivational)
+      }, review.motivational),
+      // Regenerate button
+      /*#__PURE__*/React.createElement("button", {
+        onClick: function() { setReview(null); setErr(null); setLoading(true); aiCoach("weekly_review").then(function(res) { setLoading(false); if (res && res.data) setReview(res.data); else setErr("Failed"); }); },
+        style: { display: "block", margin: "12px auto 0", background: "none", border: "none", color: "rgba(255,255,255,0.25)", fontSize: 11, cursor: "pointer", fontFamily: "inherit" }
+      }, "\u21BB Ask Master Li again")
     )
   );
 }
