@@ -1205,7 +1205,7 @@ input::placeholder{color:#888}
 .seg>button{flex:1;padding:8px 12px;border-radius:7px;text-align:center;font-size:13px;font-weight:600;color:#888;cursor:pointer;border:none;background:none;font-family:inherit;transition:all 0.2s}
 .seg>button.on{background:#1a1a1a;color:#f0f0f0;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
 .toast{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:rgba(17,17,17,0.95);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid #222;border-radius:14px;padding:12px 24px;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;z-index:200;animation:fi 0.25s ease;white-space:nowrap}
-.appear{animation:fi 0.4s ease}
+.appear{animation:fi 0.2s ease}
 @keyframes fi{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 @keyframes orbit{from{transform:rotate(0deg) translateX(60px) rotate(0deg)}to{transform:rotate(360deg) translateX(60px) rotate(-360deg)}}
@@ -1652,16 +1652,16 @@ function NotifSettingsSection() {
     React.createElement("div", { style: card },
       React.createElement("div", { style: row },
         React.createElement("div", null,
-          React.createElement("div", { style: { fontSize: 15, color: "#f5f5f7", fontWeight: 500 } }, "🏃 Habits reminder"),
-          React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.35)", marginTop: 2 } }, p.habits_enabled ? ("Sends daily at " + hourLabel(p.habits_hour)) : "Off")
+          React.createElement("div", { style: { fontSize: 15, color: "#f5f5f7", fontWeight: 500 } }, "🏃 Habits Reminder"),
+          React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.35)", marginTop: 2 } }, p.habits_enabled ? ("Daily at " + hourLabel(p.habits_hour) + " — your pending habits & streaks") : "Off")
         ),
         React.createElement(Toggle, { on: p.habits_enabled, onToggle: function() { saveNotifProfile({ habits_enabled: !p.habits_enabled }); } })
       ),
       p.habits_enabled && React.createElement(TimeSelect, { val: p.habits_hour, onChange: function(v) { saveNotifProfile({ habits_hour: v }); } }),
       React.createElement("div", { style: row },
         React.createElement("div", null,
-          React.createElement("div", { style: { fontSize: 15, color: "#f5f5f7", fontWeight: 500 } }, "✅ Tasks reminder"),
-          React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.35)", marginTop: 2 } }, p.tasks_enabled ? ("Sends daily at " + hourLabel(p.tasks_hour)) : "Off")
+          React.createElement("div", { style: { fontSize: 15, color: "#f5f5f7", fontWeight: 500 } }, "✅ Tasks Reminder"),
+          React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.35)", marginTop: 2 } }, p.tasks_enabled ? ("Daily at " + hourLabel(p.tasks_hour) + " — today's tasks & overdue items") : "Off")
         ),
         React.createElement(Toggle, { on: p.tasks_enabled, onToggle: function() { saveNotifProfile({ tasks_enabled: !p.tasks_enabled }); } })
       ),
@@ -1669,7 +1669,7 @@ function NotifSettingsSection() {
       React.createElement("div", { style: rowLast },
         React.createElement("div", null,
           React.createElement("div", { style: { fontSize: 15, color: "#f5f5f7", fontWeight: 500 } }, "🧠 AI Daily Coaching"),
-          React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.35)", marginTop: 2 } }, p.digest_enabled ? ("Sends daily at " + hourLabel(p.digest_hour)) : "Off"),
+          React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.35)", marginTop: 2 } }, p.digest_enabled ? ("Daily at " + hourLabel(p.digest_hour) + " — AI-powered coaching from Master Li") : "Off"),
           React.createElement("div", { style: { fontSize: 11, color: "rgba(74,222,128,0.6)", marginTop: 2 } }, "In-depth daily coaching from Master Li — streaks, patterns, evolution progress")
         ),
         React.createElement(Toggle, { on: p.digest_enabled, onToggle: function() { saveNotifProfile({ digest_enabled: !p.digest_enabled }); } })
@@ -2848,7 +2848,7 @@ function AICoachCard() {
     ),
     // Smart nudge — speech bubble style
     (mode === "nudge" || mode === "idle") && nudge && React.createElement("div", {
-      style: { padding: "0 18px 16px" }
+      style: { padding: "0 18px 16px", animation: "fi 0.4s ease", overflow: "hidden" }
     },
       React.createElement("div", { style: {
         fontSize: 14, color: "rgba(255,255,255,0.65)", lineHeight: 1.6,
@@ -3058,6 +3058,7 @@ function NLTaskInput(p) {
       onKeyDown: function (e) { if (e.key === "Enter") submit(); },
       placeholder: "\uD83E\uDDE0 Add a task... \"Call mom Tuesday 3pm\" or paste a list",
       maxLength: 500,
+      "aria-label": "Add a task",
       disabled: loading,
       style: { width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid #252525", borderRadius: 12, padding: "12px 16px", paddingRight: 70, color: "#f0f0f0", fontFamily: "inherit", fontSize: 14, outline: "none", boxSizing: "border-box", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }
     }),
@@ -3065,7 +3066,10 @@ function NLTaskInput(p) {
       onClick: submit,
       disabled: loading,
       style: { position: "absolute", right: 6, top: 6, bottom: 6, background: "#4ADE80", border: "none", color: "#000", borderRadius: 8, padding: "0 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }
-    }, loading ? "..." : "Add")
+    }, loading ? "..." : "Add"),
+    val.length > 300 && /*#__PURE__*/React.createElement("div", {
+      style: { position: "absolute", right: 8, bottom: -16, fontSize: 10, color: val.length > 450 ? "#FF453A" : "rgba(255,255,255,0.2)" }
+    }, val.length + "/500")
   );
 }
 
@@ -3264,7 +3268,7 @@ function HomePage(p) {
       setEvoCelebration({ emoji: newLv.emoji, name: newLv.name, fromName: prevLv.name });
     }
     if (isToday) {
-      if (nd >= daily.length && nd >= MIN_H && nx >= MIN_XP) toast.show("Day won!", "🏆");else toast.show("+" + result.xp + " XP", "⚡");
+      if (nd >= daily.length && nd >= MIN_H && nx >= MIN_XP) toast.show("Day won! All habits crushed.", "🏆");else toast.show("+" + result.xp + " XP" + (daily.length - nd === 1 ? " — one more to win the day!" : ""), "⚡");
     } else {
       toast.show("+" + result.xp + " XP — logged for " + viewLabel, "⚡");
     }
@@ -3412,7 +3416,7 @@ function HomePage(p) {
         /*#__PURE__*/React.createElement("div", null,
           /*#__PURE__*/React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: _evoPenalty > 0 ? "#FF453A" : "#f5f5f7" } }, lv.name, _evoPenalty > 0 ? " ⬇" : ""),
           /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "#4ADE80", marginTop: 1 } }, xp.toLocaleString() + " XP"),
-          nl && /*#__PURE__*/React.createElement("div", { style: { fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 2 } }, (nl.min - xp).toLocaleString() + " XP to " + nl.emoji)
+          nl && /*#__PURE__*/React.createElement("div", { style: { fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 2 } }, (nl.min - xp).toLocaleString() + " to " + nl.emoji + " " + nl.name)
         )
       ),
       /*#__PURE__*/React.createElement("div", { style: { marginTop: 8 } },
@@ -5045,18 +5049,23 @@ function ProfilePage({
   /*#__PURE__*/React.createElement("div", { "data-guide": "evo-card", className: "profile-card" },
     /*#__PURE__*/React.createElement("div", { className: "pc-creature", style: { animation: "float 3s ease-in-out infinite" } }, lv.emoji),
     /*#__PURE__*/React.createElement("div", { className: "pc-name", style: _evoPenalty > 0 ? { color: "#FF453A" } : {} }, lv.name, _evoPenalty > 0 ? " \u2B07" : ""),
-    _np && /*#__PURE__*/React.createElement("div", { style: { margin: "6px auto 4px", maxWidth: 200 } },
-      /*#__PURE__*/React.createElement("input", {
-        value: _np.display_name || '',
-        placeholder: "Set display name",
-        onChange: function(e) { saveNotifProfile({ display_name: e.target.value }); },
-        style: { width: "100%", background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 10, padding: "8px 12px", color: "#f5f5f7", fontFamily: "inherit", fontSize: 14, textAlign: "center", outline: "none" }
-      })
-    ),
+    _np && /*#__PURE__*/React.createElement(function DisplayNameInput() {
+      var _dn = useState(_np.display_name || '');
+      var dn = _dn[0]; var setDn = _dn[1];
+      return /*#__PURE__*/React.createElement("div", { style: { margin: "6px auto 4px", maxWidth: 200 } },
+        /*#__PURE__*/React.createElement("input", {
+          value: dn,
+          placeholder: "Set display name",
+          onChange: function(e) { setDn(e.target.value); _np.display_name = e.target.value; },
+          onBlur: function() { saveNotifProfile({ display_name: dn }); },
+          style: { width: "100%", background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 10, padding: "8px 12px", color: "#f5f5f7", fontFamily: "inherit", fontSize: 14, textAlign: "center", outline: "none" }
+        })
+      );
+    }),
     /*#__PURE__*/React.createElement("div", { className: "pc-xp" }, xp.toLocaleString() + " XP"),
     _np && _np.friend_code && /*#__PURE__*/React.createElement("div", {
       style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 4, cursor: "pointer" },
-      onClick: function() { navigator.clipboard.writeText(_np.friend_code); toast('Friend code copied!'); }
+      onClick: function() { navigator.clipboard.writeText(_np.friend_code); toast.show('Friend code copied!', '📋'); }
     },
       /*#__PURE__*/React.createElement("span", { style: { fontSize: 12, color: "rgba(255,255,255,0.35)" } }, "Friend Code: "),
       /*#__PURE__*/React.createElement("span", { style: { fontSize: 14, fontWeight: 700, color: "#4ADE80", fontFamily: "monospace", letterSpacing: 2 } }, _np.friend_code),
@@ -8828,18 +8837,24 @@ function FriendsPage() {
 
     // Friends tab
     !loading && tab === "friends" && React.createElement("div", null,
-      friends.length === 0 && React.createElement("div", { style: { textAlign: "center", padding: "48px 16px" } },
-        React.createElement("div", { style: { fontSize: 48, marginBottom: 16 } }, "👥"),
-        React.createElement("div", { style: { fontSize: 16, fontWeight: 600, marginBottom: 8 } }, "No friends yet"),
-        React.createElement("div", { style: { fontSize: 13, color: "rgba(255,255,255,0.4)", marginBottom: 20, lineHeight: 1.6 } },
-          "Share your friend code or tap + Add to connect with someone."
+      friends.length === 0 && React.createElement("div", { style: { textAlign: "center", padding: "40px 16px" } },
+        React.createElement("div", { style: { fontSize: 48, marginBottom: 12 } }, "👥"),
+        React.createElement("div", { style: { fontSize: 18, fontWeight: 700, marginBottom: 6, fontFamily: "'Syne',sans-serif" } }, "Evolution is better together"),
+        React.createElement("div", { style: { fontSize: 13, color: "rgba(255,255,255,0.4)", marginBottom: 20, lineHeight: 1.6, maxWidth: 280, margin: "0 auto 20px" } },
+          "Add friends to compete on the leaderboard, share streaks, and hold each other accountable."
         ),
-        _np && _np.friend_code && React.createElement("div", { style: { fontSize: 13, color: "rgba(255,255,255,0.3)" } },
-          "Your code: ", React.createElement("span", {
-            style: { color: "#4ADE80", fontFamily: "monospace", fontWeight: 700, fontSize: 20, letterSpacing: 3, cursor: "pointer" },
+        _np && _np.friend_code && React.createElement("div", { style: { marginBottom: 16 } },
+          React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.25)", marginBottom: 6 } }, "YOUR FRIEND CODE"),
+          React.createElement("div", {
+            style: { color: "#4ADE80", fontFamily: "monospace", fontWeight: 700, fontSize: 24, letterSpacing: 4, cursor: "pointer", padding: "10px 20px", background: "rgba(74,222,128,0.06)", borderRadius: 12, border: "1px solid rgba(74,222,128,0.15)", display: "inline-block" },
             onClick: function() { navigator.clipboard.writeText(_np.friend_code); toast("Copied!"); }
-          }, _np.friend_code)
-        )
+          }, _np.friend_code),
+          React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.2)", marginTop: 6 } }, "Tap to copy")
+        ),
+        React.createElement("button", {
+          onClick: shareCode,
+          style: { background: "linear-gradient(135deg, #4ADE80, #22D3EE)", border: "none", borderRadius: 100, padding: "12px 28px", color: "#000", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }
+        }, "🔗 Invite a Friend")
       ),
       friends.map(function(f, i) { return friendCard(f, i, false); })
     ),
@@ -8945,7 +8960,7 @@ function LoginScreen({ onLogin }) {
     /*#__PURE__*/React.createElement("div", { style:{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"#050505", padding:"24px" } },
       /*#__PURE__*/React.createElement("div", { style:{ width:"100%", maxWidth:400 } },
         /*#__PURE__*/React.createElement("div", { style:{ textAlign:"center", marginBottom:40 } },
-          /*#__PURE__*/React.createElement("div", { style:{ fontSize:52, marginBottom:12 } }, "\uD83E\uDDEC"),
+          /*#__PURE__*/React.createElement("img", { src: "master-li-4.png", alt: "Master Li", style: { width: 80, height: 80, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(74,222,128,0.2)", marginBottom: 16, filter: "drop-shadow(0 4px 20px rgba(251,146,60,0.3))", animation: "masterLiFloat 5s ease-in-out infinite" } }),
           /*#__PURE__*/React.createElement("h1", { style:{ fontSize:28, fontWeight:800, marginBottom:6, fontFamily:"'Syne','DM Sans',sans-serif", letterSpacing:"-0.5px" } }, "Monkolution"),
           /*#__PURE__*/React.createElement("p", { style:{ fontSize:15, color:"rgba(255,255,255,0.4)" } }, mode==="signup" ? "Create your account" : "Welcome back")
         ),
