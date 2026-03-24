@@ -241,6 +241,16 @@ async function aiCoach(action, extra) {
     var today = _today();
     var now = new Date();
     var context = {};
+    // Add user profile demographics for personalization
+    var _profile = _np || {};
+    var userProfile = {
+      name: _profile.display_name || null,
+      age: _profile.onboard_age || null,
+      gender: _profile.onboard_gender || null,
+      goals: _profile.onboard_goals || null,
+      career: _profile.onboard_career || null,
+      purpose: _profile.onboard_purpose || null
+    };
 
     if (action === "smart_nudge") {
       var habits = getH().filter(function(h){ return h.active && h.freq === "daily"; });
@@ -335,7 +345,7 @@ async function aiCoach(action, extra) {
     if (extra) Object.assign(context, extra);
 
     var res = await sb.functions.invoke("ai-coach", {
-      body: { action: action, context: context }
+      body: { action: action, context: context, userProfile: userProfile }
     });
     if (res.error) return { error: res.error.message || "AI request failed" };
     return res.data || { error: "Empty response" };
@@ -1486,7 +1496,7 @@ function loadNotifProfile() {
   if (!STORE.uid) return;
   var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   sb.from('profiles').select('*').eq('user_id', STORE.uid).maybeSingle().then(function(res) {
-    _np = res.data || { habits_enabled: false, habits_hour: 9, tasks_enabled: false, tasks_hour: 9, digest_enabled: false, digest_hour: 7, notif_tz: tz, display_name: '', friend_code: null, xp_public: true };
+    _np = res.data || { habits_enabled: false, habits_hour: 9, tasks_enabled: false, tasks_hour: 9, digest_enabled: false, digest_hour: 7, notif_tz: tz, display_name: '', friend_code: null, xp_public: true, onboard_age: null, onboard_gender: null, onboard_goals: null, onboard_career: null, onboard_purpose: null };
     var needsSave = false;
     if (!_np.notif_tz || _np.notif_tz !== tz) { _np.notif_tz = tz; needsSave = true; }
     if (!_np.friend_code) { _np.friend_code = generateFriendCode(); needsSave = true; }
@@ -8934,7 +8944,7 @@ function LoginScreen({ onLogin }) {
           console.error('[Monkolution] loadAll failed on signup:', err.message);
         }
         loadNotifProfile();
-        onLogin(signUpData.user.email);
+        onLogin(signUpData.user.email, true); // true = new signup, show onboarding
       } else {
         setErr("Account created! Please log in.");
         setMode("login");
@@ -8996,11 +9006,179 @@ function LoginScreen({ onLogin }) {
   );
 }
 
+// ─── Onboarding Screen ─────────────────────────────────────────────────────
+function OnboardingScreen({ onComplete }) {
+  var [step, setStep] = useState(0);
+  var [data, setData] = useState({ name: '', age: '', gender: '', goals: [], career: '', purpose: '' });
+  var [saving, setSaving] = useState(false);
+
+  var goalOptions = [
+    { id: 'habits', label: 'Build better habits', emoji: '🎯' },
+    { id: 'fitness', label: 'Get in shape', emoji: '💪' },
+    { id: 'money', label: 'Get finances on track', emoji: '💰' },
+    { id: 'productivity', label: 'Be more productive', emoji: '⚡' },
+    { id: 'mindfulness', label: 'Practice mindfulness', emoji: '🧘‍♂️' },
+    { id: 'learning', label: 'Learn new skills', emoji: '📚' },
+    { id: 'health', label: 'Improve health', emoji: '❤️' },
+    { id: 'discipline', label: 'Build discipline', emoji: '🔥' }
+  ];
+
+  function toggleGoal(id) {
+    var g = data.goals.slice();
+    if (g.includes(id)) g = g.filter(function(x) { return x !== id; });
+    else if (g.length < 4) g.push(id);
+    setData(Object.assign({}, data, { goals: g }));
+  }
+
+  function finish() {
+    setSaving(true);
+    var profile = {
+      user_id: STORE.uid,
+      display_name: data.name.trim(),
+      onboard_age: data.age,
+      onboard_gender: data.gender,
+      onboard_goals: data.goals.join(','),
+      onboard_career: data.career.trim(),
+      onboard_purpose: data.purpose.trim()
+    };
+    sb.from('profiles').upsert(profile, { onConflict: 'user_id' }).then(function() {
+      if (_np) {
+        _np.display_name = data.name.trim();
+        _np.onboard_age = data.age;
+        _np.onboard_gender = data.gender;
+        _np.onboard_goals = data.goals.join(',');
+        _np.onboard_career = data.career.trim();
+        _np.onboard_purpose = data.purpose.trim();
+      }
+      setSaving(false);
+      onComplete();
+    });
+  }
+
+  var inputStyle = { width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid #222', borderRadius: 12, padding: '13px 16px', color: '#f0f0f0', fontFamily: 'inherit', fontSize: 16, outline: 'none', boxSizing: 'border-box' };
+  var btnNext = { width: '100%', background: '#4ADE80', border: 'none', borderRadius: 100, padding: '14px', color: '#000', fontFamily: 'inherit', fontSize: 16, fontWeight: 700, cursor: 'pointer', marginTop: 16, transition: 'all 0.2s' };
+  var btnSkip = { background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', marginTop: 12 };
+
+  var steps = [
+    // Step 0: Welcome
+    function() {
+      return React.createElement('div', { style: { textAlign: 'center' } },
+        React.createElement('img', { src: 'master-li-2.png', alt: 'Master Li', style: { width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(74,222,128,0.2)', marginBottom: 16, filter: 'drop-shadow(0 4px 20px rgba(251,146,60,0.3))' } }),
+        React.createElement('h2', { style: { fontSize: 24, fontWeight: 800, fontFamily: "'Syne',sans-serif", marginBottom: 8 } }, 'Welcome, student.'),
+        React.createElement('p', { style: { fontSize: 14, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, marginBottom: 8 } },
+          "I'm Master Li, your AI coach. Before we begin your journey, tell me a little about yourself so I can guide you better."
+        ),
+        React.createElement('button', { onClick: function() { setStep(1); }, style: btnNext }, "Let's go"),
+        React.createElement('button', { onClick: onComplete, style: btnSkip }, 'Skip for now')
+      );
+    },
+    // Step 1: Name & basics
+    function() {
+      return React.createElement('div', null,
+        React.createElement('div', { style: { fontSize: 11, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16 } }, 'Step 1 of 4 — About You'),
+        React.createElement('div', { style: { marginBottom: 16 } },
+          React.createElement('label', { style: { fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 6, display: 'block' } }, 'What should I call you?'),
+          React.createElement('input', { value: data.name, onChange: function(e) { setData(Object.assign({}, data, { name: e.target.value })); }, placeholder: 'Your name', style: inputStyle })
+        ),
+        React.createElement('div', { style: { display: 'flex', gap: 12, marginBottom: 16 } },
+          React.createElement('div', { style: { flex: 1 } },
+            React.createElement('label', { style: { fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 6, display: 'block' } }, 'Age range'),
+            React.createElement('select', { value: data.age, onChange: function(e) { setData(Object.assign({}, data, { age: e.target.value })); }, style: Object.assign({}, inputStyle, { appearance: 'none' }) },
+              React.createElement('option', { value: '' }, 'Select'),
+              React.createElement('option', { value: '18-24' }, '18-24'),
+              React.createElement('option', { value: '25-34' }, '25-34'),
+              React.createElement('option', { value: '35-44' }, '35-44'),
+              React.createElement('option', { value: '45-54' }, '45-54'),
+              React.createElement('option', { value: '55+' }, '55+')
+            )
+          ),
+          React.createElement('div', { style: { flex: 1 } },
+            React.createElement('label', { style: { fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 6, display: 'block' } }, 'Gender'),
+            React.createElement('select', { value: data.gender, onChange: function(e) { setData(Object.assign({}, data, { gender: e.target.value })); }, style: Object.assign({}, inputStyle, { appearance: 'none' }) },
+              React.createElement('option', { value: '' }, 'Select'),
+              React.createElement('option', { value: 'male' }, 'Male'),
+              React.createElement('option', { value: 'female' }, 'Female'),
+              React.createElement('option', { value: 'other' }, 'Other'),
+              React.createElement('option', { value: 'skip' }, 'Prefer not to say')
+            )
+          )
+        ),
+        React.createElement('button', { onClick: function() { setStep(2); }, style: Object.assign({}, btnNext, { opacity: data.name.trim() ? 1 : 0.5 }), disabled: !data.name.trim() }, 'Next'),
+        React.createElement('button', { onClick: function() { setStep(2); }, style: btnSkip }, 'Skip')
+      );
+    },
+    // Step 2: Goals
+    function() {
+      return React.createElement('div', null,
+        React.createElement('div', { style: { fontSize: 11, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 } }, 'Step 2 of 4 — Your Goals'),
+        React.createElement('h3', { style: { fontSize: 18, fontWeight: 700, marginBottom: 4 } }, 'What are you working on?'),
+        React.createElement('p', { style: { fontSize: 13, color: 'rgba(255,255,255,0.4)', marginBottom: 16 } }, 'Pick up to 4. This helps Master Li prioritize your coaching.'),
+        React.createElement('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 } },
+          goalOptions.map(function(g) {
+            var selected = data.goals.includes(g.id);
+            return React.createElement('button', {
+              key: g.id, onClick: function() { toggleGoal(g.id); },
+              style: { background: selected ? 'rgba(74,222,128,0.12)' : 'rgba(255,255,255,0.04)', border: selected ? '1px solid rgba(74,222,128,0.3)' : '1px solid #222', borderRadius: 12, padding: '12px', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit', color: selected ? '#4ADE80' : 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: selected ? 600 : 400, transition: 'all 0.15s' }
+            }, g.emoji + ' ' + g.label);
+          })
+        ),
+        React.createElement('button', { onClick: function() { setStep(3); }, style: Object.assign({}, btnNext, { opacity: data.goals.length > 0 ? 1 : 0.5 }), disabled: data.goals.length === 0 }, 'Next'),
+        React.createElement('button', { onClick: function() { setStep(3); }, style: btnSkip }, 'Skip')
+      );
+    },
+    // Step 3: Career & purpose
+    function() {
+      return React.createElement('div', null,
+        React.createElement('div', { style: { fontSize: 11, color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16 } }, 'Step 3 of 4 — Context'),
+        React.createElement('div', { style: { marginBottom: 16 } },
+          React.createElement('label', { style: { fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 6, display: 'block' } }, 'What do you do? (job, student, etc.)'),
+          React.createElement('input', { value: data.career, onChange: function(e) { setData(Object.assign({}, data, { career: e.target.value })); }, placeholder: 'e.g. Software engineer, Student, Freelancer', style: inputStyle })
+        ),
+        React.createElement('div', { style: { marginBottom: 16 } },
+          React.createElement('label', { style: { fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 6, display: 'block' } }, 'Why are you here? (one sentence)'),
+          React.createElement('input', { value: data.purpose, onChange: function(e) { setData(Object.assign({}, data, { purpose: e.target.value })); }, placeholder: "e.g. I want to stop procrastinating and get my life together", maxLength: 200, style: inputStyle })
+        ),
+        React.createElement('button', { onClick: function() { setStep(4); }, style: btnNext }, 'Next'),
+        React.createElement('button', { onClick: function() { setStep(4); }, style: btnSkip }, 'Skip')
+      );
+    },
+    // Step 4: Summary & finish
+    function() {
+      return React.createElement('div', { style: { textAlign: 'center' } },
+        React.createElement('img', { src: 'master-li-4.png', alt: 'Master Li', style: { width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(74,222,128,0.2)', marginBottom: 16, filter: 'drop-shadow(0 4px 20px rgba(251,146,60,0.3))' } }),
+        React.createElement('h2', { style: { fontSize: 22, fontWeight: 800, fontFamily: "'Syne',sans-serif", marginBottom: 8 } },
+          data.name ? "Welcome, " + data.name + "." : "Your journey begins."
+        ),
+        React.createElement('p', { style: { fontSize: 14, color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, marginBottom: 20 } },
+          "I know what you're working toward. My coaching will be tailored to your goals" + (data.career ? " as a " + data.career : "") + ". Every habit, every task, every day brings you closer."
+        ),
+        data.goals.length > 0 && React.createElement('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center', marginBottom: 20 } },
+          data.goals.map(function(gid) {
+            var g = goalOptions.find(function(o) { return o.id === gid; });
+            return g ? React.createElement('span', { key: gid, style: { background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 100, padding: '4px 12px', fontSize: 12, color: '#4ADE80' } }, g.emoji + ' ' + g.label) : null;
+          })
+        ),
+        React.createElement('button', { onClick: finish, disabled: saving, style: Object.assign({}, btnNext, { opacity: saving ? 0.6 : 1 }) }, saving ? 'Setting up...' : "Begin your evolution")
+      );
+    }
+  ];
+
+  return React.createElement(React.Fragment, null,
+    React.createElement('style', null, CSS),
+    React.createElement('div', { style: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050505', padding: '24px' } },
+      React.createElement('div', { style: { width: '100%', maxWidth: 420, animation: 'fi 0.3s ease' } },
+        steps[step]()
+      )
+    )
+  );
+}
+
 // ─── Root ──────────────────────────────────────────────────────────────────
 function Monkolution() {
   var [user, setUser] = useState(null);
   var [loading, setLoading] = useState(true);
   var [loadErr, setLoadErr] = useState(null);
+  var [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   useEffect(function () {
     // Check for existing session on page load
@@ -9059,7 +9237,9 @@ function Monkolution() {
     )
   );
 
-  if (!user) return /*#__PURE__*/React.createElement(LoginScreen, { onLogin: setUser });
+  if (!user) return /*#__PURE__*/React.createElement(LoginScreen, { onLogin: function(email, isNew) { setUser(email); if (isNew) setNeedsOnboarding(true); } });
+
+  if (needsOnboarding) return /*#__PURE__*/React.createElement(OnboardingScreen, { onComplete: function() { setNeedsOnboarding(false); } });
 
   return /*#__PURE__*/React.createElement(AppShell, {
     user: user,
