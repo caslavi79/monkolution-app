@@ -1238,13 +1238,27 @@ input::placeholder{color:#888}
 .sidebar-user .logout-btn:hover{color:#FF453A;background:rgba(255,69,58,0.1)}
 .main-content{flex:1;min-width:0;height:100vh;overflow-y:auto}
 
-/* ── Creature ring (landing page style) ── */
-.creature-ring{width:100px;height:100px;border-radius:50%;border:3px solid #333;display:flex;align-items:center;justify-content:center;position:relative;margin:0 auto 4px}
+/* ── Creature ring ── */
+.creature-ring{width:80px;height:80px;border-radius:50%;border:3px solid #333;display:flex;align-items:center;justify-content:center;position:relative;margin:0 auto 4px}
 .creature-ring::after{content:'';position:absolute;inset:-3px;border-radius:50%;border:3px solid transparent;border-top-color:#4ADE80;animation:ringRotate 3s linear infinite}
 @keyframes ringRotate{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-.creature-ring .cr-emoji{font-size:2.8rem;animation:creaturePulse 3s ease-in-out infinite}
+.creature-ring .cr-emoji{font-size:2.2rem;animation:creaturePulse 3s ease-in-out infinite}
 @keyframes creaturePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
 .creature-ring.won::after{border-top-color:#30D158;border-right-color:#30D158;border-bottom-color:#30D158;border-left-color:#30D158}
+/* ── Home card grid ── */
+.home-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.home-card{background:#111;border:1px solid #1e1e1e;border-radius:14px;padding:12px 14px;box-shadow:0 2px 8px rgba(0,0,0,0.25)}
+.home-card-header{font-size:10px;font-weight:600;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+/* ── Evolution celebration overlay ── */
+@keyframes evoExplode{0%{transform:scale(0);opacity:1}50%{transform:scale(1.5);opacity:0.8}100%{transform:scale(2.5);opacity:0}}
+@keyframes evoPop{0%{transform:scale(0.5);opacity:0}30%{transform:scale(1.2);opacity:1}60%{transform:scale(0.95)}100%{transform:scale(1);opacity:1}}
+@keyframes evoShine{0%{opacity:0;transform:rotate(0deg)}50%{opacity:1}100%{opacity:0;transform:rotate(180deg)}}
+.evo-celebration{position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);flex-direction:column;gap:16px}
+.evo-celebration .evo-burst{position:absolute;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(74,222,128,0.4),transparent 70%);animation:evoExplode 1.5s ease-out forwards}
+.evo-celebration .evo-emoji{font-size:80px;animation:evoPop 0.8s cubic-bezier(0.175,0.885,0.32,1.275) forwards;z-index:1}
+.evo-celebration .evo-label{font-family:'Syne',sans-serif;font-weight:800;font-size:28px;color:#f5f5f7;z-index:1;animation:evoPop 0.8s 0.3s cubic-bezier(0.175,0.885,0.32,1.275) both}
+.evo-celebration .evo-sub{font-size:14px;color:rgba(255,255,255,0.5);z-index:1;animation:evoPop 0.8s 0.5s cubic-bezier(0.175,0.885,0.32,1.275) both}
+.evo-celebration .evo-dismiss{margin-top:20px;background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.3);color:#4ADE80;padding:10px 24px;border-radius:100px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;z-index:1;animation:evoPop 0.8s 0.7s cubic-bezier(0.175,0.885,0.32,1.275) both;border:none}
 
 /* ── XP Bar (landing page style) ── */
 .xp-bar{width:100%;height:4px;background:#1a1a1a;border-radius:100px;overflow:hidden;margin:4px 0}
@@ -1476,7 +1490,13 @@ function loadNotifProfile() {
     var needsSave = false;
     if (!_np.notif_tz || _np.notif_tz !== tz) { _np.notif_tz = tz; needsSave = true; }
     if (!_np.friend_code) { _np.friend_code = generateFriendCode(); needsSave = true; }
-    if (needsSave) sb.from('profiles').upsert(Object.assign({ user_id: STORE.uid }, _np));
+    if (needsSave) {
+      // Only update the fields that changed, don't overwrite everything
+      var updates = { user_id: STORE.uid };
+      if (!res.data || !res.data.notif_tz || res.data.notif_tz !== tz) updates.notif_tz = tz;
+      if (!res.data || !res.data.friend_code) updates.friend_code = _np.friend_code;
+      sb.from('profiles').upsert(updates, { onConflict: 'user_id' });
+    }
     _npNotify();
   });
 }
@@ -2542,9 +2562,21 @@ function Scene(p) {
   var lv = p.level,
     won = p.won,
     prog = p.progress,
-    xp = p.xp || 0;
+    xp = p.xp || 0,
+    compact = p.compact;
   var nl = EVO[EVO.indexOf(lv) + 1] || EVO[EVO.length - 1];
   var xpProg = lv === nl ? 100 : Math.min(100, Math.round((xp - lv.min) / (nl.min - lv.min) * 100));
+  // Compact mode — just the ring, no bar/label (used in grid card)
+  if (compact) {
+    return /*#__PURE__*/React.createElement("div", {
+      className: "creature-ring" + (won ? " won" : ""),
+      style: Object.assign({ width: 52, height: 52, flexShrink: 0 }, won ? { borderColor: "#30D158" } : {})
+    },
+      won
+        ? /*#__PURE__*/React.createElement("span", { className: "cr-emoji", style: { color: "#30D158", fontSize: "1.4rem" } }, "\u2713")
+        : /*#__PURE__*/React.createElement("span", { className: "cr-emoji", style: { fontSize: "1.6rem" } }, lv.emoji)
+    );
+  }
   return /*#__PURE__*/React.createElement("div", {
     style: { display: "flex", flexDirection: "column", alignItems: "center", padding: "12px 0 4px" }
   },
@@ -3048,6 +3080,7 @@ function HomePage(p) {
   const [guideOpen, setGuideOpen] = useState(false);
   const [showSugg, setShowSugg] = useState(true);
   const [focusMode, setFocusMode] = useState(false);
+  const [evoCelebration, setEvoCelebration] = useState(null);
   var habits = getH().filter(function (h) {
     return h.active;
   });
@@ -3220,10 +3253,16 @@ function HomePage(p) {
     if (doneIds.includes(hid)) {
       return;
     } // no undo
+    var prevLv = getLv(totalXP());
     var result = doC(hid, viewDate);
     if (!result) return;
     var nd = dailyDone + 1;
     var nx = dailyXP + (result.xp || 0);
+    // Check for evolution!
+    var newLv = getLv(totalXP());
+    if (newLv.name !== prevLv.name) {
+      setEvoCelebration({ emoji: newLv.emoji, name: newLv.name, fromName: prevLv.name });
+    }
     if (isToday) {
       if (nd >= daily.length && nd >= MIN_H && nx >= MIN_XP) toast.show("Day won!", "🏆");else toast.show("+" + result.xp + " XP", "⚡");
     } else {
@@ -3285,7 +3324,16 @@ function HomePage(p) {
   });
   return /*#__PURE__*/React.createElement("div", {
     className: "appear pg pg-today"
-  }, /*#__PURE__*/React.createElement("div", {
+  },
+  // Evolution celebration overlay
+  evoCelebration && /*#__PURE__*/React.createElement("div", { className: "evo-celebration", onClick: function() { setEvoCelebration(null); } },
+    /*#__PURE__*/React.createElement("div", { className: "evo-burst" }),
+    /*#__PURE__*/React.createElement("div", { className: "evo-burst", style: { animationDelay: "0.2s", background: "radial-gradient(circle,rgba(251,191,36,0.3),transparent 70%)" } }),
+    /*#__PURE__*/React.createElement("div", { className: "evo-emoji" }, evoCelebration.emoji),
+    /*#__PURE__*/React.createElement("div", { className: "evo-label" }, "You evolved!"),
+    /*#__PURE__*/React.createElement("div", { className: "evo-sub" }, evoCelebration.fromName + " → " + evoCelebration.name),
+    /*#__PURE__*/React.createElement("button", { className: "evo-dismiss", onClick: function() { setEvoCelebration(null); } }, "Continue your journey")
+  ), /*#__PURE__*/React.createElement("div", {
     "data-guide": "date-nav",
     style: { padding: "4px 4px 8px", textAlign: "center" }
   }, /*#__PURE__*/React.createElement("div", {
@@ -3354,41 +3402,63 @@ function HomePage(p) {
   }, /*#__PURE__*/React.createElement("div", {
     className: "col-a"
   },
-  /* ── Creature ring (landing page style) ── */
-  /*#__PURE__*/React.createElement("div", { "data-guide": "ring" },
-    /*#__PURE__*/React.createElement(Scene, { level: lv, won: dayWon, progress: dayProg, xp: xp })
-  ),
-  nudge && /*#__PURE__*/React.createElement("div", {
-    style: { textAlign: "center", fontSize: 13, color: "#888", marginBottom: 12, lineHeight: 1.5 }
-  }, nudge),
-  /* ── Streak row (landing page style) ── */
-  /*#__PURE__*/React.createElement("div", {
-    "data-guide": "streak-card", className: "streak-row",
-    style: _evoPenalty > 0 ? { borderColor: "rgba(255,69,58,0.3)" } : {}
-  },
-    /*#__PURE__*/React.createElement("div", { className: "streak-info" },
-      /*#__PURE__*/React.createElement("span", { className: "si-emoji" }, lv.emoji, _evoPenalty > 0 ? "\u2B07" : ""),
-      /*#__PURE__*/React.createElement("div", null,
-        /*#__PURE__*/React.createElement("div", { className: "si-name", style: _evoPenalty > 0 ? { color: "#FF453A" } : {} }, lv.name),
-        /*#__PURE__*/React.createElement("div", { className: "si-xp" }, xp + " XP")
+  /* ── Compact grid: Evolution + This Week ── */
+  /*#__PURE__*/React.createElement("div", { className: "home-grid", "data-guide": "ring" },
+    // Evolution card
+    /*#__PURE__*/React.createElement("div", { className: "home-card", "data-guide": "streak-card" },
+      /*#__PURE__*/React.createElement("div", { className: "home-card-header" }, "Evolution"),
+      /*#__PURE__*/React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
+        /*#__PURE__*/React.createElement(Scene, { level: lv, won: dayWon, progress: dayProg, xp: xp, compact: true }),
+        /*#__PURE__*/React.createElement("div", null,
+          /*#__PURE__*/React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: _evoPenalty > 0 ? "#FF453A" : "#f5f5f7" } }, lv.name, _evoPenalty > 0 ? " ⬇" : ""),
+          /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "#4ADE80", marginTop: 1 } }, xp.toLocaleString() + " XP"),
+          nl && /*#__PURE__*/React.createElement("div", { style: { fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 2 } }, (nl.min - xp).toLocaleString() + " XP to " + nl.emoji)
+        )
+      ),
+      /*#__PURE__*/React.createElement("div", { style: { marginTop: 8 } },
+        /*#__PURE__*/React.createElement("div", { className: "xp-bar" },
+          /*#__PURE__*/React.createElement("div", { className: "xp-fill", style: { width: (nl ? Math.min(100, (xp - (EVO[EVO.indexOf(lv)] || lv).min) / (nl.min - (EVO[EVO.indexOf(lv)] || lv).min) * 100) : 100) + "%" } })
+        )
       )
     ),
-    /*#__PURE__*/React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
+    // This Week card
+    /*#__PURE__*/React.createElement("div", { className: "home-card" },
+      /*#__PURE__*/React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } },
+        /*#__PURE__*/React.createElement("div", { className: "home-card-header", style: { marginBottom: 0 } }, "This Week"),
+        getDaysWonStreak() > 0 && /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, fontWeight: 800, color: "#FB923C", fontFamily: "'Syne',sans-serif", display: "flex", alignItems: "center", gap: 3 } },
+          getDaysWonStreak() >= 7 ? "🔥" : getDaysWonStreak() >= 3 ? "✨" : "",
+          " " + getDaysWonStreak() + " streak"
+        )
+      ),
+      /*#__PURE__*/React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginTop: 10 } },
+        weekDays.map(function (w, i) {
+          return /*#__PURE__*/React.createElement("div", { key: i, style: { textAlign: "center" } },
+            /*#__PURE__*/React.createElement("div", { style: { fontSize: 10, color: w.is ? "#f5f5f7" : "#666", fontWeight: w.is ? 600 : 400, marginBottom: 4 } }, w.label),
+            /*#__PURE__*/React.createElement("div", { style: {
+              width: 22, height: 22, borderRadius: "50%",
+              border: w.won ? "none" : "1.5px solid " + (w.some ? "rgba(255,255,255,0.12)" : "#333"),
+              background: w.won ? "#4ADE80" : w.some ? "rgba(255,255,255,0.05)" : "transparent",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 10, fontWeight: 700, color: "#000"
+            } }, w.won ? "✓" : "")
+          );
+        })
+      ),
       getDaysWonStreak() >= 2 && /*#__PURE__*/React.createElement("button", {
         onClick: function() {
           var s = getDaysWonStreak(), x = totalXP(), l = getLv(x);
           var t = "I'm on a " + s + "-day streak on Monkolution! " + l.emoji + " " + l.name + " — " + x.toLocaleString() + " XP. Can you keep up? https://app.monkolution.com";
           if (navigator.share) { navigator.share({ text: t }).catch(function(){}); }
-          else { navigator.clipboard.writeText(t); useToast()("Copied!"); }
+          else { navigator.clipboard.writeText(t); toast.show("Copied!", "📋"); }
         },
-        style: { background: "linear-gradient(135deg, rgba(251,146,60,0.15), rgba(251,146,60,0.08))", border: "1px solid rgba(251,146,60,0.2)", borderRadius: 10, padding: "6px 12px", color: "#FB923C", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }
-      }, "🔥 Share"),
-      /*#__PURE__*/React.createElement("div", { className: "streak-num" },
-        /*#__PURE__*/React.createElement("div", { className: "sn-val", style: { color: getDaysWonStreak() > 0 ? "#FB923C" : "rgba(255,255,255,0.5)" } }, getDaysWonStreak()),
-        /*#__PURE__*/React.createElement("div", { className: "sn-label" }, "streak")
-      )
+        style: { width: "100%", marginTop: 8, background: "linear-gradient(135deg, rgba(251,146,60,0.12), rgba(251,146,60,0.06))", border: "1px solid rgba(251,146,60,0.15)", borderRadius: 8, padding: "5px 0", color: "#FB923C", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }
+      }, "🔥 Share Streak")
     )
-  ), _evoPenalty > 0 && /*#__PURE__*/React.createElement("div", {
+  ),
+  // Contextual nudge
+  nudge && /*#__PURE__*/React.createElement("div", {
+    style: { textAlign: "center", fontSize: 12, color: "#888", marginBottom: 8, lineHeight: 1.5 }
+  }, nudge), _evoPenalty > 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       background: "rgba(255,69,58,0.08)",
       border: "1px solid rgba(255,69,58,0.25)",
@@ -3410,15 +3480,7 @@ function HomePage(p) {
       lineHeight: 1.5
     }
   }, _evoReason, " \xB7 ", _evoPenalty === 1 ? "dropped 1 tier" : "dropped 2 tiers", " \xB7 complete today's habits to recover")),
-  /* ── Week row (landing page style) ── */
-  /*#__PURE__*/React.createElement("div", { className: "week-row" },
-    weekDays.map(function (w, i) {
-      return /*#__PURE__*/React.createElement("div", { key: i, className: "week-day" },
-        /*#__PURE__*/React.createElement("span", { className: "wd-letter", style: w.is ? { color: "#f0f0f0", fontWeight: 600 } : {} }, w.label),
-        /*#__PURE__*/React.createElement("span", { className: "wd-dot" + (w.won ? " filled" : w.some ? " partial" : "") })
-      );
-    })
-  ),
+  /* week row now integrated into the grid card above */
   /* ── Master Li Card ── */
   /*#__PURE__*/React.createElement(AICoachCard, null),
   debts.length > 0 && debtGoalTotal > 0 && /*#__PURE__*/React.createElement("div", {
