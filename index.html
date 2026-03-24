@@ -2916,24 +2916,43 @@ function NLTaskInput(p) {
 
   function submit() {
     if (!val.trim() || loading) return;
+    if (val.trim().length > 500) { alert("Task input is limited to 500 characters. Try shorter descriptions."); return; }
     setLoading(true);
     aiCoach("parse_task", { input: val.trim() }).then(function (res) {
       setLoading(false);
-      if (res && res.data && res.data.title) {
-        addT({
-          title: res.data.title,
-          due: res.data.due || null,
-          dueTime: res.data.dueTime || null,
-          doDate: res.data.doDate || null,
-          doTime: res.data.doTime || null,
-          pri: res.data.pri || "medium",
-          pid: res.data.pid || null
-        });
-        setVal("");
-        if (p.onCreated) p.onCreated(res.data.title);
-        if (p.refresh) p.refresh();
+      if (res && res.data) {
+        // Multi-task response
+        if (res.data.tasks && Array.isArray(res.data.tasks)) {
+          var names = [];
+          res.data.tasks.forEach(function(t) {
+            addT({
+              title: t.title, due: t.due || null, dueTime: t.dueTime || null,
+              doDate: t.doDate || null, doTime: t.doTime || null,
+              pri: t.pri || "medium", pid: t.pid || null
+            });
+            names.push(t.title);
+          });
+          setVal("");
+          if (p.onCreated) p.onCreated(names.length + " tasks added: " + names.join(", "));
+          if (p.refresh) p.refresh();
+        }
+        // Single task response
+        else if (res.data.title) {
+          addT({
+            title: res.data.title, due: res.data.due || null, dueTime: res.data.dueTime || null,
+            doDate: res.data.doDate || null, doTime: res.data.doTime || null,
+            pri: res.data.pri || "medium", pid: res.data.pid || null
+          });
+          setVal("");
+          if (p.onCreated) p.onCreated(res.data.title);
+          if (p.refresh) p.refresh();
+        } else {
+          addT({ title: val.trim(), pri: "medium" });
+          setVal("");
+          if (p.onCreated) p.onCreated(val.trim());
+          if (p.refresh) p.refresh();
+        }
       } else {
-        // Fallback: create task with raw text
         addT({ title: val.trim(), pri: "medium" });
         setVal("");
         if (p.onCreated) p.onCreated(val.trim());
@@ -2949,7 +2968,8 @@ function NLTaskInput(p) {
       value: val,
       onChange: function (e) { setVal(e.target.value); },
       onKeyDown: function (e) { if (e.key === "Enter") submit(); },
-      placeholder: "\uD83E\uDDE0 Add a task... \"Call mom Tuesday 3pm\"",
+      placeholder: "\uD83E\uDDE0 Add a task... \"Call mom Tuesday 3pm\" or paste a list",
+      maxLength: 500,
       disabled: loading,
       style: { width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid #252525", borderRadius: 12, padding: "12px 16px", paddingRight: 70, color: "#f0f0f0", fontFamily: "inherit", fontSize: 14, outline: "none", boxSizing: "border-box", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }
     }),
