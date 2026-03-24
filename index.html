@@ -262,7 +262,7 @@ async function aiCoach(action, extra) {
       context = {
         today: today, dayName: dayNames[now.getDay()], hour: now.getHours(),
         xp: totalXP(), level: getEffectiveLv(totalXP()).level.name, streak: getDaysWonStreak(),
-        habits: dHabits.map(function(h){ return { icon: h.icon, name: h.name, diff: h.diff, done: dDoneIds.includes(h.id), streak: getStreak ? getStreak(h.id) : 0 }; }),
+        habits: dHabits.map(function(h){ return { icon: h.icon, name: h.name, freq: h.freq || "daily", target: h.freq === "weekly" ? (h.target || 3) : null, diff: h.diff, done: dDoneIds.includes(h.id), streak: getStreak ? getStreak(h.id) : 0 }; }),
         tasks: getT().filter(function(t){ return t.status !== "done"; }).sort(function(a,b){ var p={urgent:0,high:1,medium:2,low:3}; return (p[a.pri]||2)-(p[b.pri]||2); }).slice(0,15).map(function(t){ return { title: t.title, pri: t.pri, due: t.due, doDate: t.doDate }; }),
         monthlyIncome: getI().reduce(function(a,i){ return a+i.amt; },0),
         monthlyExpenses: getE().reduce(function(a,e){ return a+e.amt; },0),
