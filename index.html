@@ -2555,6 +2555,13 @@ function AICoachCard() {
   const [plan, setPlan] = useState(null);
   const [err, setErr] = useState(null);
 
+  // Preload all Master Li sprites so transitions are instant
+  useEffect(function() {
+    Object.values(MASTER_LI_SPRITES).forEach(function(src) {
+      var img = new Image(); img.src = src;
+    });
+  }, []);
+
   // Load smart nudge in background on mount
   useEffect(function () {
     aiCoach("smart_nudge").then(function (res) {
@@ -2575,10 +2582,20 @@ function AICoachCard() {
   }
 
   // Master Li — CSS-animated character (swap PNG path for custom art)
-  var MASTER_LI_PNG = 'master-li.png';
+  // Master Li sprite states — different expressions for each mode
+  var MASTER_LI_SPRITES = {
+    idle: 'master-li-2.png',      // eyes closed, deep meditation
+    nudge: 'master-li-3.png',     // eyes open, warm smile (greeting)
+    loading: 'master-li-4.png',   // eyes closed, peaceful (thinking)
+    plan: 'master-li-1.png',      // enlightenment glow (insight delivered)
+    error: 'master-li-2.png'      // back to meditation
+  };
+  var MASTER_LI_PNG = 'master-li-2.png'; // default fallback
   var MonkAvatar = function(props) {
     var size = props.size || 56;
     var thinking = props.meditating;
+    var spriteMode = props.spriteMode || "idle";
+    var currentSprite = MASTER_LI_SPRITES[spriteMode] || MASTER_LI_PNG;
 
     // SVG monk silhouette — clean, stylized meditation figure
     var monkSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">' +
@@ -2640,10 +2657,10 @@ function AICoachCard() {
       } });
     }) : null;
 
-    var character = MASTER_LI_PNG
+    var character = currentSprite
       ? React.createElement("img", {
-          src: MASTER_LI_PNG, alt: "Master Li",
-          style: { width: size, height: size, objectFit: "cover", position: "relative", zIndex: 1, borderRadius: "50%", border: "1.5px solid rgba(74,222,128,0.2)" }
+          src: currentSprite, alt: "Master Li",
+          style: { width: size, height: size, objectFit: "cover", position: "relative", zIndex: 1, borderRadius: "50%", border: "1.5px solid rgba(74,222,128,0.2)", transition: "opacity 0.6s ease" }
         })
       : React.createElement("div", {
           dangerouslySetInnerHTML: { __html: monkSVG },
@@ -2728,7 +2745,7 @@ function AICoachCard() {
       display: "flex", alignItems: "center", gap: 14, padding: "16px 18px",
       borderBottom: (mode === "plan" || mode === "loading") ? "1px solid rgba(74,222,128,0.08)" : "none"
     } },
-      React.createElement(MonkAvatar, { size: mode === "loading" ? 72 : 64, meditating: mode === "loading" || mode === "nudge" || mode === "idle" }),
+      React.createElement(MonkAvatar, { size: mode === "loading" ? 72 : 64, meditating: mode === "loading" || mode === "nudge" || mode === "idle", spriteMode: mode }),
       React.createElement("div", { style: { flex: 1 } },
         React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 8 } },
           React.createElement("span", { style: { fontSize: 16, fontWeight: 800, color: "#f5f5f7", fontFamily: "'Syne','DM Sans',sans-serif", letterSpacing: "-0.3px" } }, "Master Li"),
