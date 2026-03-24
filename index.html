@@ -205,7 +205,8 @@ async function deleteAllUserData() {
 
 function _id() { return Date.now().toString(36) + Math.random().toString(36).substr(2,9); }
 function generateFriendCode() { var c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789',r=''; for(var i=0;i<6;i++) r+=c[Math.floor(Math.random()*c.length)]; return r; }
-function _today() { return new Date().toISOString().split('T')[0]; }
+function _ds(d) { return d.getFullYear()+'-'+(d.getMonth()+1<10?'0':'')+(d.getMonth()+1)+'-'+(d.getDate()<10?'0':'')+d.getDate(); }
+function _today() { return _ds(new Date()); }
 function _month() { var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1<10?'0':'')+(d.getMonth()+1); }
 function _weekNum() { var d=new Date(),start=new Date(d.getFullYear(),0,1); return Math.ceil(((d-start)/86400000+start.getDay()+1)/7); }
 function _weekId() { return new Date().getFullYear()+'-W'+_weekNum(); }
@@ -274,7 +275,7 @@ async function aiCoach(action, extra) {
       var inactive = allH.filter(function(h){ return !h.active; });
       var allComps = getC();
       var thirtyAgo = new Date(); thirtyAgo.setDate(thirtyAgo.getDate()-30);
-      var thirtyAgoStr = thirtyAgo.toISOString().split("T")[0];
+      var thirtyAgoStr = _ds(thirtyAgo);
       var recentComps = allComps.filter(function(c){ return c.d >= thirtyAgoStr; });
       context = {
         habits: active.map(function(h){
@@ -288,7 +289,7 @@ async function aiCoach(action, extra) {
       };
     } else if (action === "weekly_review") {
       var weekStart = new Date(); weekStart.setDate(weekStart.getDate()-7);
-      var wsStr = weekStart.toISOString().split("T")[0];
+      var wsStr = _ds(weekStart);
       var weekComps = getC().filter(function(c){ return c.d >= wsStr; });
       var weekTasks = getT().filter(function(t){ return t.status === "done" && t.completedDate && t.completedDate >= wsStr; });
       var activeH = getH().filter(function(h){ return h.active; });
@@ -311,7 +312,7 @@ async function aiCoach(action, extra) {
     } else if (action === "parse_task") {
       var tom = new Date(); tom.setDate(tom.getDate()+1);
       context = {
-        today: today, tomorrow: tom.toISOString().split("T")[0],
+        today: today, tomorrow: _ds(tom),
         projects: getPj().map(function(p){ return { id: p.id, name: p.name }; }),
         input: extra && extra.input || ""
       };
@@ -395,7 +396,7 @@ function unC(hid,date) {
 function periodCount(hid,freq) {
   var cs=STORE.completions.filter(function(c){return c.hid===hid;});
   if(freq==='daily') return cs.filter(function(c){return c.d===_today();}).length;
-  if(freq==='weekly'){var now=new Date(),day=now.getDay(),start=new Date(now);start.setDate(now.getDate()-day);var end=new Date(start);end.setDate(start.getDate()+7);var ss=start.toISOString().split('T')[0],es=end.toISOString().split('T')[0];return cs.filter(function(c){return c.d>=ss&&c.d<es;}).length;}
+  if(freq==='weekly'){var now=new Date(),day=now.getDay(),start=new Date(now);start.setDate(now.getDate()-day);var end=new Date(start);end.setDate(start.getDate()+7);var ss=_ds(start),es=_ds(end);return cs.filter(function(c){return c.d>=ss&&c.d<es;}).length;}
   if(freq==='monthly'){var m=_month();return cs.filter(function(c){return c.d.substring(0,7)===m;}).length;}
   return 0;
 }
@@ -403,13 +404,13 @@ function getStreak(hid) {
   var cs=STORE.completions.filter(function(c){return c.hid===hid;}).map(function(c){return c.d;}).sort().reverse();
   if(!cs.length) return 0;
   var s=0,d=new Date(_today());
-  for(var i=0;i<400;i++){var ds=d.toISOString().split('T')[0];if(cs.includes(ds)){s++;d.setDate(d.getDate()-1);}else if(i===0){d.setDate(d.getDate()-1);}else break;}
+  for(var i=0;i<400;i++){var ds=_ds(d);if(cs.includes(ds)){s++;d.setDate(d.getDate()-1);}else if(i===0){d.setDate(d.getDate()-1);}else break;}
   return s;
 }
 function getWeeklyStreak(hid,target) {
   var cs=STORE.completions.filter(function(c){return c.hid===hid;});
   var streak=0,now=new Date();
-  for(var i=1;i<=52;i++){var wStart=new Date(now);wStart.setDate(now.getDate()-now.getDay()-(i-1)*7);wStart.setHours(0,0,0,0);var wEnd=new Date(wStart);wEnd.setDate(wStart.getDate()+7);var ss=wStart.toISOString().split('T')[0],es=wEnd.toISOString().split('T')[0];var count=cs.filter(function(c){return c.d>=ss&&c.d<es;}).length;if(count>=target)streak++;else break;}
+  for(var i=1;i<=52;i++){var wStart=new Date(now);wStart.setDate(now.getDate()-now.getDay()-(i-1)*7);wStart.setHours(0,0,0,0);var wEnd=new Date(wStart);wEnd.setDate(wStart.getDate()+7);var ss=_ds(wStart),es=_ds(wEnd);var count=cs.filter(function(c){return c.d>=ss&&c.d<es;}).length;if(count>=target)streak++;else break;}
   return streak;
 }
 
@@ -428,7 +429,7 @@ function getDaysWonStreak() {
   var habits=getH().filter(function(h){return h.active&&h.freq==='daily';});
   if(!habits.length) return 0;
   var comps=getC(),streak=0,d=new Date(_today());
-  for(var i=0;i<365;i++){var ds=d.toISOString().split('T')[0];if(isDayWon(ds,habits,comps)){streak++;d.setDate(d.getDate()-1);}else if(i===0){d.setDate(d.getDate()-1);}else break;}
+  for(var i=0;i<365;i++){var ds=_ds(d);if(isDayWon(ds,habits,comps)){streak++;d.setDate(d.getDate()-1);}else if(i===0){d.setDate(d.getDate()-1);}else break;}
   return streak;
 }
 
@@ -644,7 +645,7 @@ function getRegressionState() {
   }).sort()[0];
 
   // Check if already recovered today
-  var todayDs = new Date().toISOString().split("T")[0];
+  var todayDs = _ds(new Date());
   var todayComps = cs.filter(function (c) {
     return c.d === todayDs && habits.find(function (h) {
       return h.id === c.hid;
@@ -661,7 +662,7 @@ function getRegressionState() {
   var d = new Date();
   d.setDate(d.getDate() - 1);
   for (var i = 0; i < 30; i++) {
-    var ds = d.toISOString().split("T")[0];
+    var ds = _ds(d);
     if (ds < earliestComp) break;
     var dayComps = cs.filter(function (c) {
       return c.d === ds && habits.find(function (h) {
@@ -2980,7 +2981,7 @@ function HomePage(p) {
   var viewDate = function () {
     var d = new Date();
     d.setDate(d.getDate() + viewOffset);
-    return d.toISOString().split("T")[0];
+    return _ds(d);
   }();
   var isToday = viewDate === today;
   var viewComps = comps.filter(function (c) {
@@ -3046,7 +3047,7 @@ function HomePage(p) {
   for (var i = 0; i < 7; i++) {
     var wd = new Date(weekStart);
     wd.setDate(weekStart.getDate() + i);
-    var wds = wd.toISOString().split("T")[0];
+    var wds = _ds(wd);
     var won = isDayWon(wds, daily, comps);
     if (won) wkDaysWon++;
     var anyComps = comps.filter(function (c) {
@@ -3077,7 +3078,7 @@ function HomePage(p) {
   var monthDaysWon = 0;
   for (var j = 0; j < dayOfMonth; j++) {
     var md = new Date(year, monthNum, j + 1);
-    var mds = md.toISOString().split("T")[0];
+    var mds = _ds(md);
     if (isDayWon(mds, daily, comps)) monthDaysWon++;
   }
   var monthlyHabitsDone = monthly.reduce(function (a, h) {
@@ -3386,7 +3387,7 @@ function HomePage(p) {
     var today2 = _today();
     var in7 = new Date();
     in7.setDate(in7.getDate() + 7);
-    var in7s = in7.toISOString().split("T")[0];
+    var in7s = _ds(in7);
     var ovd = all.filter(function (t) {
       return t.status !== "done" && t.due && t.due < today2 && (!t.doDate || t.doDate < today2);
     });
@@ -3422,7 +3423,7 @@ function HomePage(p) {
         var tom = new Date();
         tom.setDate(tom.getDate() + 1);
         updT(t.id, {
-          doDate: tom.toISOString().split("T")[0]
+          doDate: _ds(tom)
         });
         r();
       }
@@ -4035,7 +4036,7 @@ function HabitsPage() {
       for (var di = 6; di >= 0; di--) {
         var dt = new Date();
         dt.setDate(dt.getDate() - di);
-        var ds = dt.toISOString().split("T")[0];
+        var ds = _ds(dt);
         historyDots.push({
           ds: ds,
           done: !!comps.find(function (c) {
@@ -4049,8 +4050,8 @@ function HabitsPage() {
         wSt.setDate(wSt.getDate() - wSt.getDay() - wi * 7);
         var wEn = new Date(wSt);
         wEn.setDate(wSt.getDate() + 7);
-        var wss = wSt.toISOString().split("T")[0];
-        var wes = wEn.toISOString().split("T")[0];
+        var wss = _ds(wSt);
+        var wes = _ds(wEn);
         var cnt = comps.filter(function (c) {
           return c.hid === h.id && c.d >= wss && c.d < wes;
         }).length;
@@ -4793,7 +4794,7 @@ function ProfilePage({
   var monthDaysWon = 0;
   for (var j = 0; j < dayOfMonth; j++) {
     var md = new Date(year, monthNum, j + 1);
-    if (isDayWon(md.toISOString().split("T")[0], daily, comps)) monthDaysWon++;
+    if (isDayWon(_ds(md), daily, comps)) monthDaysWon++;
   }
   var bestStreak = function () {
     var best = 0;
@@ -4801,7 +4802,7 @@ function ProfilePage({
     for (var i = 364; i >= 0; i--) {
       var d = new Date(now);
       d.setDate(now.getDate() - i);
-      var ds = d.toISOString().split("T")[0];
+      var ds = _ds(d);
       if (isDayWon(ds, daily, comps)) {
         cur++;
         if (cur > best) best = cur;
@@ -4818,7 +4819,7 @@ function ProfilePage({
   for (var k = 0; k < 7; k++) {
     var wd = new Date(weekStart);
     wd.setDate(weekStart.getDate() + k);
-    var wds = wd.toISOString().split("T")[0];
+    var wds = _ds(wd);
     var wdc = comps.filter(function (c) {
       return c.d === wds && dailyHabitIds.includes(c.hid);
     });
@@ -4851,7 +4852,7 @@ function ProfilePage({
   var monthChart = [];
   for (var ci = 0; ci < daysInChart; ci++) {
     var cd = new Date(chartYear, chartMN, ci + 1);
-    var cds = cd.toISOString().split("T")[0];
+    var cds = _ds(cd);
     var dc = comps.filter(function (c) {
       return c.d === cds;
     });
@@ -5620,7 +5621,7 @@ function FinancePage() {
     for (var d = chartRange - 1; d >= 0; d--) {
       var dt = new Date();
       dt.setDate(dt.getDate() - d);
-      var ds = dt.toISOString().split("T")[0];
+      var ds = _ds(dt);
       var dayIn = incomes.filter(function (i) {
         return !i.recurring && i.date === ds;
       }).reduce(function (a, i) {
@@ -7502,7 +7503,7 @@ function ProjectsPage() {
       var tom = new Date();
       tom.setDate(tom.getDate() + 1);
       updT(t.id, {
-        doDate: tom.toISOString().split("T")[0]
+        doDate: _ds(tom)
       });
       r();
     }
