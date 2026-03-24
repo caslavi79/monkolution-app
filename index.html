@@ -1697,6 +1697,14 @@ var GUIDES = {
       text: "Your streak only grows when you win a day — 80% of habits done and 50 XP earned.",
       target: "streak-card",
       tipPos: "above"
+    }, {
+      title: "Master Li — Your AI Coach",
+      text: "Master Li (powered by Claude AI) watches your habits, streaks, and patterns. Tap 'Get Daily Plan' for a personalized game plan. His expression changes based on your progress — finish all your habits and he'll glow with pride.",
+      target: null
+    }, {
+      title: "Friends & Leaderboard",
+      text: "Check the Friends tab to add friends, compare streaks, and compete on the leaderboard. Share your streak or nudge a friend who's slacking!",
+      target: null
     }]
   },
   habits: {
@@ -1893,6 +1901,16 @@ var GUIDES = {
       text: "Set your preferred time for daily habit and task reminder emails. Toggle them on from the Habits and Tasks pages.",
       target: "export-btn",
       tipPos: "above"
+    }, {
+      icon: "🧠",
+      title: "AI Daily Coaching",
+      text: "Turn on the AI Daily Coaching email and Master Li will send you a personalized coaching email every morning — habit trends, streak analysis, evolution progress, and financial insights. Not a generic reminder.",
+      target: null
+    }, {
+      icon: "📊",
+      title: "Weekly Review",
+      text: "Tap the 🧠 Weekly Review button to get Master Li's full analysis of your week — score out of 10, wins, improvements, financial notes, and next week's goals.",
+      target: null
     }]
   }
 };
@@ -2585,15 +2603,15 @@ function AICoachCard() {
   // Master Li — CSS-animated character (swap PNG path for custom art)
   // Master Li sprite states — different expressions for each mode
   // Master Li sprites — expression based on daily progress
-  // 1 = enlightenment glow (all done), 2 = warm/content, 3 = neutral, 4 = stern meditation
+  // Verified mapping: 1=meditation, 2=warm smile, 3=stern/thinking, 4=BIG golden glow
   var MASTER_LI_PROGRESS = [
-    'master-li-4.png',   // 0% — stern, waiting (you haven't started)
-    'master-li-3.png',   // 1-49% — neutral, some progress
-    'master-li-2.png',   // 50-99% — warm, almost there
-    'master-li-1.png'    // 100% — enlightenment glow, proud
+    'master-li-3.png',   // 0% — stern, contemplating (you haven't started)
+    'master-li-1.png',   // 1-49% — meditation, subtle glow (some progress)
+    'master-li-2.png',   // 50-99% — warm smile (almost there)
+    'master-li-4.png'    // 100% — BIG golden enlightenment glow, proud!
   ];
-  var MASTER_LI_LOADING = 'master-li-4.png'; // thinking state
-  var MASTER_LI_PNG = 'master-li-4.png'; // default fallback
+  var MASTER_LI_LOADING = 'master-li-1.png'; // eyes closed meditation (thinking)
+  var MASTER_LI_PNG = 'master-li-1.png'; // default fallback
 
   function getMasterLiSprite(progressPct, uiMode) {
     if (uiMode === "loading") return MASTER_LI_LOADING;
@@ -2679,33 +2697,39 @@ function AICoachCard() {
           style: { width: size, height: size, position: "relative", zIndex: 1 }
         });
 
+    // Visual intensity scales with progress
+    var glowIntensity = progress >= 100 ? 0.35 : progress >= 50 ? 0.15 : 0.06;
+    var ringOpacity = progress >= 100 ? 0.3 : progress >= 50 ? 0.15 : 0.06;
+    var auraColor = progress >= 100 ? "rgba(251,191,36," : progress >= 50 ? "rgba(74,222,128," : "rgba(255,255,255,";
+    var glowColor = progress >= 100 ? "rgba(251,191,36," : "rgba(74,222,128,";
+
     return React.createElement("div", { style: {
       position: "relative", width: size * 1.5, height: size * 1.5, flexShrink: 0,
       display: "flex", alignItems: "center", justifyContent: "center"
     } },
-      // Outer aura glow (always visible, pulses)
+      // Outer aura glow — golden at 100%, green at 50%+, dim otherwise
       React.createElement("div", { style: {
         position: "absolute", inset: 0, borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(74,222,128," + (thinking ? "0.2" : "0.08") + ") 30%, rgba(251,146,60,0.04) 60%, transparent 70%)",
-        animation: "masterLiGlow " + (thinking ? "2s" : "4s") + " ease-in-out infinite", pointerEvents: "none"
+        background: "radial-gradient(circle, " + auraColor + (thinking ? "0.25" : String(glowIntensity)) + ") 30%, " + auraColor + "0.02) 60%, transparent 70%)",
+        animation: "masterLiGlow " + (thinking ? "2s" : progress >= 100 ? "3s" : "4s") + " ease-in-out infinite", pointerEvents: "none"
       } }),
-      // Inner ring (always visible, subtle)
+      // Inner ring
       React.createElement("div", { style: {
         position: "absolute", inset: size * 0.1, borderRadius: "50%",
-        border: "1px solid rgba(74,222,128," + (thinking ? "0.25" : "0.1") + ")",
+        border: "1px solid " + glowColor + String(ringOpacity) + ")",
         animation: "masterLiRing 3s ease-in-out infinite", pointerEvents: "none"
       } }),
       // Outer ring
       React.createElement("div", { style: {
         position: "absolute", inset: -2, borderRadius: "50%",
-        border: "1px solid rgba(74,222,128," + (thinking ? "0.15" : "0.05") + ")",
+        border: "1px solid " + glowColor + String(ringOpacity * 0.5) + ")",
         animation: "masterLiRing 3s ease-in-out infinite 1s", pointerEvents: "none"
       } }),
       // Floating + breathing character container
       React.createElement("div", { style: {
         position: "relative", width: size, height: size,
         animation: "masterLiFloat 5s ease-in-out infinite",
-        filter: "drop-shadow(0 4px 20px rgba(74,222,128," + (thinking ? "0.4" : "0.2") + ")) drop-shadow(0 0 30px rgba(251,146,60," + (thinking ? "0.15" : "0.05") + "))"
+        filter: "drop-shadow(0 4px 20px " + glowColor + (thinking ? "0.4" : String(glowIntensity + 0.1)) + ")) drop-shadow(0 0 " + (progress >= 100 ? "40px" : "20px") + " rgba(251,146,60," + (progress >= 100 ? "0.2" : "0.05") + "))"
       } },
         // Breathing scale on the image itself
         React.createElement("div", { style: {
@@ -2832,13 +2856,16 @@ function AICoachCard() {
         },
           React.createElement("div", { style: {
             width: 24, height: 24, borderRadius: 8,
-            background: p.type === "habit" ? "rgba(74,222,128,0.12)" : "rgba(34,211,238,0.12)",
+            background: p.type === "habit" ? "rgba(74,222,128,0.12)" : p.type === "money" ? "rgba(251,146,60,0.12)" : "rgba(34,211,238,0.12)",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 11, fontWeight: 800, flexShrink: 0,
-            color: p.type === "habit" ? "#4ADE80" : "#22D3EE"
+            color: p.type === "habit" ? "#4ADE80" : p.type === "money" ? "#FB923C" : "#22D3EE"
           } }, i + 1),
-          React.createElement("div", null,
-            React.createElement("div", { style: { fontSize: 14, fontWeight: 600 } }, p.name),
+          React.createElement("div", { style: { flex: 1 } },
+            React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 8 } },
+              React.createElement("span", { style: { fontSize: 14, fontWeight: 600 } }, p.name),
+              p.when && React.createElement("span", { style: { fontSize: 10, color: "rgba(251,146,60,0.7)", fontWeight: 600, background: "rgba(251,146,60,0.08)", padding: "2px 6px", borderRadius: 4 } }, p.when)
+            ),
             React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2, lineHeight: 1.4 } }, p.reason)
           )
         );
@@ -2887,7 +2914,7 @@ function WeeklyReviewSheet(p) {
     review && /*#__PURE__*/React.createElement("div", { style: { padding: "8px 0" } },
       // Master Li header with score
       /*#__PURE__*/React.createElement("div", { style: { textAlign: "center", marginBottom: 16 } },
-        /*#__PURE__*/React.createElement("img", { src: review.score >= 7 ? "master-li-1.png" : review.score >= 5 ? "master-li-2.png" : "master-li-4.png", alt: "Master Li", style: { width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: "1.5px solid rgba(74,222,128,0.2)", marginBottom: 8, filter: "drop-shadow(0 4px 16px rgba(74,222,128,0.15))" } }),
+        /*#__PURE__*/React.createElement("img", { src: review.score >= 7 ? "master-li-4.png" : review.score >= 5 ? "master-li-2.png" : "master-li-3.png", alt: "Master Li", style: { width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: "1.5px solid rgba(74,222,128,0.2)", marginBottom: 8, filter: "drop-shadow(0 4px 16px rgba(74,222,128,0.15))" } }),
         /*#__PURE__*/React.createElement("div", { style: { fontSize: 48, fontFamily: "'Syne',sans-serif", fontWeight: 800, color: review.score >= 7 ? "#4ADE80" : review.score >= 5 ? "#FB923C" : "#F87171" } }, review.score),
         /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "#888" } }, "out of 10")
       ),
@@ -3352,10 +3379,10 @@ function HomePage(p) {
           var s = getDaysWonStreak(), x = totalXP(), l = getLv(x);
           var t = "I'm on a " + s + "-day streak on Monkolution! " + l.emoji + " " + l.name + " — " + x.toLocaleString() + " XP. Can you keep up? https://app.monkolution.com";
           if (navigator.share) { navigator.share({ text: t }).catch(function(){}); }
-          else { navigator.clipboard.writeText(t); }
+          else { navigator.clipboard.writeText(t); useToast()("Copied!"); }
         },
-        style: { background: "rgba(251,146,60,0.12)", border: "1px solid rgba(251,146,60,0.15)", borderRadius: 8, padding: "4px 8px", color: "#FB923C", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }
-      }, "📤"),
+        style: { background: "linear-gradient(135deg, rgba(251,146,60,0.15), rgba(251,146,60,0.08))", border: "1px solid rgba(251,146,60,0.2)", borderRadius: 10, padding: "6px 12px", color: "#FB923C", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4 }
+      }, "🔥 Share"),
       /*#__PURE__*/React.createElement("div", { className: "streak-num" },
         /*#__PURE__*/React.createElement("div", { className: "sn-val", style: { color: getDaysWonStreak() > 0 ? "#FB923C" : "rgba(255,255,255,0.5)" } }, getDaysWonStreak()),
         /*#__PURE__*/React.createElement("div", { className: "sn-label" }, "streak")
@@ -8662,8 +8689,8 @@ function FriendsPage() {
         React.createElement("button", {
           onClick: function() { nudgeFriend(f); },
           title: "Nudge this friend",
-          style: { background: "rgba(251,146,60,0.12)", border: "none", borderRadius: 8, padding: "4px 8px", color: "#FB923C", fontSize: 12, cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }
-        }, "👊"),
+          style: { background: "rgba(251,146,60,0.12)", border: "1px solid rgba(251,146,60,0.15)", borderRadius: 8, padding: "5px 10px", color: "#FB923C", fontSize: 11, cursor: "pointer", fontFamily: "inherit", fontWeight: 700 }
+        }, "💬 Nudge"),
         f.friendship_id && React.createElement("button", {
           onClick: function() { removeFriend(f.friendship_id); },
           style: { background: "none", border: "none", color: "rgba(255,255,255,0.15)", fontSize: 12, cursor: "pointer", padding: "2px 4px", flexShrink: 0 }
@@ -8690,8 +8717,8 @@ function FriendsPage() {
       React.createElement("div", { style: { display: "flex", gap: 8 } },
         React.createElement("button", {
           onClick: shareCode,
-          style: { background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 10, padding: "8px 12px", color: "#f5f5f7", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }
-        }, "📤 Invite"),
+          style: { background: "linear-gradient(135deg, rgba(74,222,128,0.12), rgba(34,211,238,0.08))", border: "1px solid rgba(74,222,128,0.2)", borderRadius: 10, padding: "8px 14px", color: "#4ADE80", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }
+        }, "🔗 Invite Friends"),
         React.createElement("button", {
           onClick: function() { setAddOpen(!addOpen); setAddErr(""); setAddSuccess(""); },
           style: { background: "#4ADE80", border: "none", borderRadius: 10, padding: "8px 14px", color: "#000", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }
@@ -8771,8 +8798,8 @@ function FriendsPage() {
         ),
         React.createElement("button", {
           onClick: shareStreak,
-          style: { background: "rgba(251,146,60,0.12)", border: "1px solid rgba(251,146,60,0.2)", borderRadius: 8, padding: "5px 12px", color: "#FB923C", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }
-        }, "📤 Share My Streak")
+          style: { background: "linear-gradient(135deg, rgba(251,146,60,0.15), rgba(251,146,60,0.08))", border: "1px solid rgba(251,146,60,0.25)", borderRadius: 10, padding: "6px 14px", color: "#FB923C", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }
+        }, "🔥 Share Streak")
       ),
       leaderboard.length === 0 && React.createElement("div", { style: { textAlign: "center", padding: 40, color: "rgba(255,255,255,0.3)" } }, "Add friends to see the leaderboard"),
       leaderboard.map(function(f, i) { return friendCard(f, i, true); })
