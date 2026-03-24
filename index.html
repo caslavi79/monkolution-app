@@ -2558,7 +2558,7 @@ function AICoachCard() {
 
   // Preload all Master Li sprites so transitions are instant
   useEffect(function() {
-    Object.values(MASTER_LI_SPRITES).forEach(function(src) {
+    MASTER_LI_PROGRESS.concat([MASTER_LI_LOADING]).forEach(function(src) {
       var img = new Image(); img.src = src;
     });
   }, []);
@@ -2584,21 +2584,30 @@ function AICoachCard() {
 
   // Master Li — CSS-animated character (swap PNG path for custom art)
   // Master Li sprite states — different expressions for each mode
-  // Master Li sprite states — different expressions for each mode
-  // Swap idle/nudge so he smiles when talking to you
-  var MASTER_LI_SPRITES = {
-    idle: 'master-li-4.png',      // eyes closed, peaceful meditation (waiting)
-    nudge: 'master-li-2.png',     // the one that smiles (when giving nudge)
-    loading: 'master-li-4.png',   // eyes closed, peaceful (thinking)
-    plan: 'master-li-1.png',      // enlightenment glow (insight delivered)
-    error: 'master-li-2.png'      // gentle face
-  };
+  // Master Li sprites — expression based on daily progress
+  // 1 = enlightenment glow (all done), 2 = warm/content, 3 = neutral, 4 = stern meditation
+  var MASTER_LI_PROGRESS = [
+    'master-li-4.png',   // 0% — stern, waiting (you haven't started)
+    'master-li-3.png',   // 1-49% — neutral, some progress
+    'master-li-2.png',   // 50-99% — warm, almost there
+    'master-li-1.png'    // 100% — enlightenment glow, proud
+  ];
+  var MASTER_LI_LOADING = 'master-li-4.png'; // thinking state
   var MASTER_LI_PNG = 'master-li-4.png'; // default fallback
+
+  function getMasterLiSprite(progressPct, uiMode) {
+    if (uiMode === "loading") return MASTER_LI_LOADING;
+    if (progressPct >= 100) return MASTER_LI_PROGRESS[3];
+    if (progressPct >= 50) return MASTER_LI_PROGRESS[2];
+    if (progressPct > 0) return MASTER_LI_PROGRESS[1];
+    return MASTER_LI_PROGRESS[0];
+  }
   var MonkAvatar = function(props) {
     var size = props.size || 56;
     var thinking = props.meditating;
-    var spriteMode = props.spriteMode || "idle";
-    var currentSprite = MASTER_LI_SPRITES[spriteMode] || MASTER_LI_PNG;
+    var progress = props.progress || 0;
+    var uiMode = props.uiMode || "idle";
+    var currentSprite = getMasterLiSprite(progress, uiMode);
 
     // SVG monk silhouette — clean, stylized meditation figure
     var monkSVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">' +
@@ -2748,7 +2757,18 @@ function AICoachCard() {
       display: "flex", alignItems: "center", gap: 14, padding: "16px 18px",
       borderBottom: (mode === "plan" || mode === "loading") ? "1px solid rgba(74,222,128,0.08)" : "none"
     } },
-      React.createElement(MonkAvatar, { size: mode === "loading" ? 72 : 64, meditating: mode === "loading" || mode === "nudge" || mode === "idle", spriteMode: mode }),
+      React.createElement(MonkAvatar, {
+        size: mode === "loading" ? 72 : 64,
+        meditating: mode === "loading" || mode === "nudge" || mode === "idle",
+        uiMode: mode,
+        progress: (function() {
+          var dh = getH().filter(function(h){ return h.active && h.freq === "daily"; });
+          if (dh.length === 0) return 100;
+          var dc = getC().filter(function(c){ return c.d === _today(); });
+          var doneCount = dh.filter(function(h){ return dc.some(function(c){ return c.hid === h.id; }); }).length;
+          return Math.round(doneCount / dh.length * 100);
+        })()
+      }),
       React.createElement("div", { style: { flex: 1 } },
         React.createElement("div", { style: { display: "flex", alignItems: "baseline", gap: 8 } },
           React.createElement("span", { style: { fontSize: 16, fontWeight: 800, color: "#f5f5f7", fontFamily: "'Syne','DM Sans',sans-serif", letterSpacing: "-0.3px" } }, "Master Li"),
