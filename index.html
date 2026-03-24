@@ -2583,14 +2583,16 @@ function AICoachCard() {
 
   // Master Li — CSS-animated character (swap PNG path for custom art)
   // Master Li sprite states — different expressions for each mode
+  // Master Li sprite states — different expressions for each mode
+  // Swap idle/nudge so he smiles when talking to you
   var MASTER_LI_SPRITES = {
-    idle: 'master-li-2.png',      // eyes closed, deep meditation
-    nudge: 'master-li-3.png',     // eyes open, warm smile (greeting)
+    idle: 'master-li-4.png',      // eyes closed, peaceful meditation (waiting)
+    nudge: 'master-li-2.png',     // the one that smiles (when giving nudge)
     loading: 'master-li-4.png',   // eyes closed, peaceful (thinking)
     plan: 'master-li-1.png',      // enlightenment glow (insight delivered)
-    error: 'master-li-2.png'      // back to meditation
+    error: 'master-li-2.png'      // gentle face
   };
-  var MASTER_LI_PNG = 'master-li-2.png'; // default fallback
+  var MASTER_LI_PNG = 'master-li-4.png'; // default fallback
   var MonkAvatar = function(props) {
     var size = props.size || 56;
     var thinking = props.meditating;
